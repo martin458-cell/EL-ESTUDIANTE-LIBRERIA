@@ -1,0 +1,63 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 0. Global Catch-All Deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // --- Helpers ---
+    function isSignedIn() { return request.auth != null; }
+    function isAdmin() { return isSignedIn() && exists(/databases/$(database)/documents/admins/$(request.auth.uid)); }
+    function incoming() { return request.resource.data; }
+    function existing() { return resource.data; }
+    function isValidId(id) { return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$'); }
+
+    // Validation for Product
+    function isValidProduct(data) {
+      return data.keys().hasAll(['name', 'price', 'stock', 'category']) &&
+             data.name is string && data.name.size() > 0 && data.name.size() <= 200 &&
+             data.price is number && data.price >= 0 &&
+             data.stock is int && data.stock >= 0 &&
+             data.category in ['libros', 'utiles', 'tecnologia'] &&
+             (!('description' in data) || (data.description is string && data.description.size() <= 2000)) &&
+             (!('imageUrl' in data) || (data.imageUrl is string && data.imageUrl.size() <= 1000)) &&
+             (!('tag' in data) || (data.tag is string && data.tag.size() <= 50)) &&
+             (!('createdAt' in data) || data.createdAt == request.time) &&
+             (!('updatedAt' in data) || data.updatedAt == request.time);
+    }
+
+    // --- Collections ---
+
+    // Products Collection
+    match /products/{productId} {
+      allow read: if true; // Public catalog
+      
+      allow create: if isAdmin() && isValidId(productId) && isValidProduct(incoming()) && 
+                    incoming().createdAt == request.time;
+      
+      allow update: if isAdmin() && isValidProduct(incoming()) && (
+        // Any admin update must at least update the updatedAt timestamp
+        incoming().updatedAt == request.time &&
+        incoming().createdAt == existing().createdAt 
+      );
+      
+      allow delete: if isAdmin();
+    }
+
+    // Admins Collection
+    match /admins/{userId} {
+      allow read: if isSignedIn() && request.auth.uid == userId;
+      // Writing to admins is restricted. 
+      // Initially, we might need a way to bootstrap an admin.
+      // We check if the email matches the owner's email for the very first admin.
+      allow create: if isSignedIn() && 
+                    request.auth.token.email == "martinherickcahuanamendoza@gmail.com" &&
+                    request.auth.token.email_verified == true &&
+                    incoming().email == request.auth.token.email &&
+                    incoming().role == "admin";
+                    
+      allow write: if isAdmin(); // Existing admins can manage other admins
+    }
+  }
+}

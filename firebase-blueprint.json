@@ -1,0 +1,40 @@
+{
+  "entities": {
+    "Product": {
+      "title": "Product",
+      "description": "Un producto de la librería (libro, útil o tecnología).",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string", "description": "Nombre del producto" },
+        "description": { "type": "string", "description": "Descripción detallada" },
+        "price": { "type": "number", "description": "Precio en Soles (PEN)" },
+        "stock": { "type": "integer", "description": "Cantidad disponible" },
+        "category": { "type": "string", "enum": ["libros", "utiles", "tecnologia"], "description": "Categoría del producto" },
+        "imageUrl": { "type": "string", "description": "URL de la imagen" },
+        "tag": { "type": "string", "description": "Etiqueta opcional (Oferta, Nuevo, etc.)" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["name", "price", "stock", "category"]
+    },
+    "Admin": {
+      "title": "Admin",
+      "description": "Usuario con permisos de administración.",
+      "type": "object",
+      "properties": {
+        "email": { "type": "string" },
+        "role": { "type": "string", "enum": ["admin"] }
+      }
+    }
+  },
+  "firestore": {
+    "/products/{productId}": {
+      "schema": "Product",
+      "description": "Colección global de productos."
+    },
+    "/admins/{userId}": {
+      "schema": "Admin",
+      "description": "Usuarios con privilegios administrativos."
+    }
+  }
+}

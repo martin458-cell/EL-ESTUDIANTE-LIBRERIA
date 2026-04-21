@@ -18,14 +18,31 @@ import {
   Cpu,
   ShoppingBag,
   ExternalLink,
-  Smartphone
+  Smartphone,
+  User,
+  Settings,
+  LogOut,
+  Loader2,
+  Package
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import { onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { auth, db, loginWithGoogle, logout } from './lib/firebase';
+import { useProducts, Product } from './hooks/useProducts';
+import { AdminPanel } from './components/Admin/AdminPanel';
 
 // --- Components ---
 
-const Navbar = () => {
+const Navbar = ({ user, isAdmin, onLogin, onLogout, onOpenAdmin }: { 
+  user: FirebaseUser | null, 
+  isAdmin: boolean, 
+  onLogin: () => void, 
+  onLogout: () => void,
+  onOpenAdmin: () => void
+}) => {
   const [isScrolled, setIsScrolled] = useState(false);
+  const [showUserMenu, setShowUserMenu] = useState(false);
 
   useEffect(() => {
     const handleScroll = () => setIsScrolled(window.scrollY > 20);
@@ -52,9 +69,58 @@ const Navbar = () => {
           <a href="#ubicacion" className="hover:text-brand-teal transition-colors">Ubicación</a>
         </div>
 
-        <button className="bg-brand-teal text-white px-5 py-2.5 rounded-full font-semibold text-sm hover:bg-brand-teal/90 transition-all shadow-md shadow-brand-teal/20">
-          Contactar
-        </button>
+        <div className="flex items-center gap-4">
+          <div className="relative">
+            {user ? (
+              <div className="flex items-center gap-3">
+                {isAdmin && (
+                  <button 
+                    onClick={onOpenAdmin}
+                    className="p-2.5 bg-brand-teal/10 text-brand-teal rounded-full hover:bg-brand-teal/20 transition-colors"
+                    title="Panel de Administración"
+                  >
+                    <Settings size={20} />
+                  </button>
+                )}
+                <button 
+                  onClick={() => setShowUserMenu(!showUserMenu)}
+                  className="flex items-center gap-2 bg-white border border-slate-200 p-1 pr-3 rounded-full hover:shadow-md transition-all"
+                >
+                  <img src={user.photoURL || ''} alt="User" className="w-8 h-8 rounded-full" />
+                  <span className="text-xs font-bold text-slate-700 hidden sm:block">{user.displayName?.split(' ')[0]}</span>
+                </button>
+                
+                <AnimatePresence>
+                  {showUserMenu && (
+                    <motion.div 
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: 10 }}
+                      className="absolute right-0 top-full mt-2 w-48 bg-white rounded-2xl shadow-xl border border-slate-100 overflow-hidden"
+                    >
+                      <button 
+                        onClick={() => { onLogout(); setShowUserMenu(false); }}
+                        className="w-full flex items-center gap-3 px-4 py-3 text-sm font-bold text-red-500 hover:bg-red-50 transition-colors"
+                      >
+                        <LogOut size={16} /> Cerrar Sesión
+                      </button>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            ) : (
+              <button 
+                onClick={onLogin}
+                className="flex items-center gap-2 text-slate-600 font-bold text-sm hover:text-brand-teal transition-colors px-4 py-2"
+              >
+                <User size={18} /> Admin
+              </button>
+            )}
+          </div>
+          <button className="bg-brand-teal text-white px-5 py-2.5 rounded-full font-semibold text-sm hover:bg-brand-teal/90 transition-all shadow-md shadow-brand-teal/20">
+            Contactar
+          </button>
+        </div>
       </div>
     </nav>
   );
@@ -149,7 +215,7 @@ const Hero = () => {
   );
 };
 
-const ProductCatalog = () => {
+const ProductCatalog = ({ products, loading }: { products: Product[], loading: boolean }) => {
   const [activeCategory, setActiveCategory] = useState('todos');
   
   const categories = [
@@ -157,15 +223,6 @@ const ProductCatalog = () => {
     { id: 'libros', name: 'Libros', icon: <BookOpen size={18} /> },
     { id: 'utiles', name: 'Útiles', icon: <PenTool size={18} /> },
     { id: 'tecnologia', name: 'Tecnología', icon: <Monitor size={18} /> }
-  ];
-
-  const products = [
-    { id: 1, category: 'libros', name: 'El Quijote - Ed. Ilustrada', price: 'S/ 45.00', img: 'https://picsum.photos/seed/book1/400/400', tag: 'Best Seller' },
-    { id: 2, category: 'utiles', name: 'Set de Arte Profesional', price: 'S/ 85.00', img: 'https://picsum.photos/seed/art1/400/400', tag: 'Nuevo' },
-    { id: 3, category: 'tecnologia', name: 'Laptop HP 15.6" 8GB RAM', price: 'S/ 1,899.00', img: 'https://picsum.photos/seed/laptop1/400/400', tag: 'Oferta' },
-    { id: 4, category: 'libros', name: 'Matemática para Ingenieros', price: 'S/ 65.00', img: 'https://picsum.photos/seed/math1/400/400' },
-    { id: 5, category: 'utiles', name: 'Mochila Ergonómica', price: 'S/ 120.00', img: 'https://picsum.photos/seed/bag1/400/400' },
-    { id: 6, category: 'tecnologia', name: 'Mouse Inalámbrico RGB', price: 'S/ 45.00', img: 'https://picsum.photos/seed/mouse1/400/400' },
   ];
 
   const filteredProducts = activeCategory === 'todos' 
@@ -178,7 +235,7 @@ const ProductCatalog = () => {
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-8 mb-16">
           <div>
             <h2 className="font-display text-4xl font-bold text-slate-900 mb-4 tracking-tight">Catálogo de Productos</h2>
-            <p className="text-slate-500 max-w-md">Encuentra exactamente lo que buscas con nuestros filtros inteligentes.</p>
+            <p className="text-slate-500 max-w-md">Encuentra exactamente lo que buscas con nuestra vitrina digital siempre actualizada.</p>
           </div>
           
           <div className="flex bg-slate-100 p-1.5 rounded-2xl overflow-x-auto no-scrollbar">
@@ -198,57 +255,96 @@ const ProductCatalog = () => {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-          <AnimatePresence mode="popLayout">
-            {filteredProducts.map((product) => (
-              <motion.div
-                layout
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.9 }}
-                transition={{ duration: 0.3 }}
-                key={product.id}
-                className="group relative bg-white rounded-3xl border border-slate-100 overflow-hidden hover:shadow-2xl transition-all hover:-translate-y-2"
-              >
-                <div className="relative aspect-square overflow-hidden bg-slate-50">
-                  <img 
-                    src={product.img} 
-                    alt={product.name} 
-                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
-                    referrerPolicy="no-referrer"
-                  />
-                  {product.tag && (
-                    <div className="absolute top-4 left-4 bg-brand-orange text-white text-[10px] font-bold uppercase tracking-widest px-3 py-1 rounded-full shadow-lg">
-                      {product.tag}
+        {loading ? (
+          <div className="flex flex-col items-center justify-center py-24 text-slate-400">
+            <Loader2 className="animate-spin mb-4" size={48} />
+            <p className="font-bold text-lg">Cargando catálogo...</p>
+          </div>
+        ) : products.length === 0 ? (
+          <div className="text-center py-24 bg-slate-50 rounded-[3rem] border-2 border-dashed border-slate-200">
+            <Package className="mx-auto text-slate-300 mb-6" size={64} />
+            <h3 className="text-2xl font-bold text-slate-800 mb-2">Aún no hay productos</h3>
+            <p className="text-slate-500">Estamos preparando las mejores ofertas para ti.</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+            <AnimatePresence mode="popLayout">
+              {filteredProducts.map((product) => (
+                <motion.div
+                  layout
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.9 }}
+                  transition={{ duration: 0.3 }}
+                  key={product.id}
+                  className="group relative bg-white rounded-3xl border border-slate-100 overflow-hidden hover:shadow-2xl transition-all hover:-translate-y-2"
+                >
+                  <div className="relative aspect-square overflow-hidden bg-slate-50">
+                    <img 
+                      src={product.imageUrl || `https://picsum.photos/seed/${product.id}/400/400`} 
+                      alt={product.name} 
+                      className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                      referrerPolicy="no-referrer"
+                    />
+                    {(product.tag || product.stock < 5) && (
+                      <div className="absolute top-4 left-4 flex flex-col gap-2">
+                        {product.tag && (
+                          <div className="bg-brand-orange text-white text-[10px] font-bold uppercase tracking-widest px-3 py-1 rounded-full shadow-lg">
+                            {product.tag}
+                          </div>
+                        )}
+                        {product.stock < 5 && product.stock > 0 && (
+                          <div className="bg-red-500 text-white text-[10px] font-bold uppercase tracking-widest px-3 py-1 rounded-full shadow-lg">
+                            ¡Últimos {product.stock}!
+                          </div>
+                        )}
+                        {product.stock === 0 && (
+                          <div className="bg-slate-800 text-white text-[10px] font-bold uppercase tracking-widest px-3 py-1 rounded-full shadow-lg">
+                            Sin Stock
+                          </div>
+                        )}
+                      </div>
+                    )}
+                    <div className="absolute inset-x-0 bottom-0 p-6 translate-y-full group-hover:translate-y-0 transition-transform duration-300 bg-gradient-to-t from-black/80 via-black/40 to-transparent">
+                      <a 
+                        href={`https://wa.me/51953366458?text=Hola,%20me%20interesa%20el%20producto:%20${product.name}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="w-full bg-brand-teal text-white py-4 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-brand-teal/90 shadow-xl"
+                      >
+                        <ShoppingBag size={20} /> Solicitar Cotización
+                      </a>
                     </div>
-                  )}
-                  <div className="absolute inset-x-0 bottom-0 p-6 translate-y-full group-hover:translate-y-0 transition-transform duration-300 bg-gradient-to-t from-black/80 via-black/40 to-transparent">
-                    <button className="w-full bg-brand-teal text-white py-4 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-brand-teal/90 shadow-xl">
-                      <ShoppingBag size={20} /> Solicitar Cotización
-                    </button>
                   </div>
-                </div>
-                
-                <div className="p-6">
-                  <div className="flex justify-between items-start mb-2">
-                    <h3 className="font-bold text-lg text-slate-800 group-hover:text-brand-teal transition-colors leading-tight">
-                      {product.name}
-                    </h3>
-                    <span className="bg-teal-50 text-brand-teal px-2 py-1 rounded-lg text-[10px] font-bold uppercase">
-                      {product.category}
-                    </span>
+                  
+                  <div className="p-6">
+                    <div className="flex justify-between items-start mb-2">
+                      <h3 className="font-bold text-lg text-slate-800 group-hover:text-brand-teal transition-colors leading-tight">
+                        {product.name}
+                      </h3>
+                      <span className="bg-teal-50 text-brand-teal px-2 py-1 rounded-lg text-[10px] font-bold uppercase">
+                        {product.category}
+                      </span>
+                    </div>
+                    <p className="text-brand-orange font-display font-bold text-xl">
+                      {product.price.toLocaleString('es-PE', { style: 'currency', currency: 'PEN' })}
+                    </p>
                   </div>
-                  <p className="text-brand-orange font-display font-bold text-xl">{product.price}</p>
-                </div>
-              </motion.div>
-            ))}
-          </AnimatePresence>
-        </div>
+                </motion.div>
+              ))}
+            </AnimatePresence>
+          </div>
+        )}
         
         <div className="mt-16 text-center">
-          <button className="inline-flex items-center gap-2 bg-slate-100 text-slate-700 px-10 py-5 rounded-2xl font-bold hover:bg-slate-200 transition-colors">
+          <a 
+            href="https://wa.me/51953366458"
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex items-center gap-2 bg-slate-100 text-slate-700 px-10 py-5 rounded-2xl font-bold hover:bg-slate-200 transition-colors"
+          >
             Ver catálogo completo en WhatsApp <ExternalLink size={18} />
-          </button>
+          </a>
         </div>
       </div>
     </section>
@@ -347,7 +443,7 @@ const LocalPresence = () => {
 const SocialShare = () => {
   const shareLinks = [
     { name: "Facebook", icon: <Facebook />, color: "bg-[#1877F2]", url: "#" },
-    { name: "WhatsApp", icon: <Smartphone />, color: "bg-[#25D366]", url: "#" },
+    { name: "WhatsApp", icon: <Smartphone />, color: "bg-[#25D366]", url: "https://wa.me/51953366458" },
     { name: "TikTok", icon: <Share2 />, color: "bg-black", url: "#" }
   ];
 
@@ -357,12 +453,15 @@ const SocialShare = () => {
         <h3 className="font-display text-2xl font-bold mb-8">¡Comparte nuestro negocio y ayuda a crecer a Puquio!</h3>
         <div className="flex flex-wrap justify-center gap-4">
           {shareLinks.map((social) => (
-            <button 
+            <a 
               key={social.name}
+              href={social.url}
+              target="_blank"
+              rel="noreferrer"
               className={`${social.color} text-white px-8 py-3 rounded-xl font-bold flex items-center gap-3 transition-transform hover:scale-105 active:scale-95 shadow-lg`}
             >
               {social.icon} {social.name}
-            </button>
+            </a>
           ))}
         </div>
       </div>
@@ -419,7 +518,7 @@ const Footer = () => {
             <a href="#" className="w-10 h-10 rounded-full border border-slate-700 flex items-center justify-center hover:bg-white/10 transition-colors">
               <Facebook size={18} />
             </a>
-            <a href="#" className="w-10 h-10 rounded-full border border-slate-700 flex items-center justify-center hover:bg-white/10 transition-colors">
+            <a href="https://wa.me/51953366458" className="w-10 h-10 rounded-full border border-slate-700 flex items-center justify-center hover:bg-white/10 transition-colors">
               <Smartphone size={18} />
             </a>
           </div>
@@ -455,18 +554,81 @@ const Footer = () => {
 // --- Main App ---
 
 export default function App() {
+  const { products, loading } = useProducts();
+  const [user, setUser] = useState<FirebaseUser | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [showAdminPanel, setShowAdminPanel] = useState(false);
+  const [isAuthLoading, setIsAuthLoading] = useState(true);
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+      setUser(firebaseUser);
+      if (firebaseUser) {
+        // Check if user is admin
+        const adminDoc = await getDoc(doc(db, 'admins', firebaseUser.uid));
+        
+        // Bootstrap the first admin if it's the owner email and doc doesn't exist
+        if (!adminDoc.exists() && firebaseUser.email === "martinherickcahuanamendoza@gmail.com") {
+          await setDoc(doc(db, 'admins', firebaseUser.uid), {
+            email: firebaseUser.email,
+            role: 'admin'
+          });
+          setIsAdmin(true);
+        } else {
+          setIsAdmin(adminDoc.exists());
+        }
+      } else {
+        setIsAdmin(false);
+      }
+      setIsAuthLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  const handleLogin = async () => {
+    try {
+      await loginWithGoogle();
+    } catch (error) {
+      console.error("Login failed:", error);
+    }
+  };
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+    } catch (error) {
+      console.error("Logout failed:", error);
+    }
+  };
+
   return (
     <div className="min-h-screen">
-      <Navbar />
+      <Navbar 
+        user={user} 
+        isAdmin={isAdmin} 
+        onLogin={handleLogin} 
+        onLogout={handleLogout}
+        onOpenAdmin={() => setShowAdminPanel(true)}
+      />
       <main>
         <Hero />
-        <ProductCatalog />
+        <ProductCatalog products={products} loading={loading} />
         <Benefits />
         <LocalPresence />
         <SocialShare />
       </main>
       <Footer />
       <AIChatPlaceholder />
+
+      <AnimatePresence>
+        {showAdminPanel && isAdmin && (
+          <AdminPanel 
+            products={products} 
+            onClose={() => setShowAdminPanel(false)} 
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 }

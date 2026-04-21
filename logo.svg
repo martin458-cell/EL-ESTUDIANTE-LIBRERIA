@@ -1,0 +1,11 @@
+<svg width="450" height="450" viewBox="0 0 450 450" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <circle cx="225" cy="225" r="220" stroke="black" stroke-width="5" fill="white"/>
+  <path d="M78 280C140 280 200 240 225 180C250 240 310 280 372 280" stroke="#00A99D" stroke-width="12" stroke-linecap="round"/>
+  <path d="M120 250C160 250 200 220 225 180C250 220 290 250 330 250" stroke="#7AC943" stroke-width="12" stroke-linecap="round"/>
+  <path d="M160 220C190 220 210 200 225 180C240 200 260 220 290 220" stroke="#FFDE17" stroke-width="12" stroke-linecap="round"/>
+  <path d="M85 150C130 150 190 190 225 240C260 190 320 150 365 150" stroke="#F7931E" stroke-width="12" stroke-linecap="round"/>
+  <path d="M125 170C165 170 200 210 225 240C250 210 285 170 325 170" stroke="#F15A24" stroke-width="12" stroke-linecap="round"/>
+  
+  <text x="50%" y="105" dominant-baseline="middle" text-anchor="middle" font-family="Arial" font-size="48" font-weight="bold" fill="#00A99D" stroke="black" stroke-width="1">Librería</text>
+  <text x="50%" y="350" dominant-baseline="middle" text-anchor="middle" font-family="Arial" font-size="56" font-weight="bold" fill="#FFDE17" stroke="black" stroke-width="1.5">El Estudiante</text>
+</svg>

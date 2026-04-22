@@ -23,7 +23,8 @@ import {
   Settings,
   LogOut,
   Loader2,
-  Package
+  Package,
+  Search
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
@@ -55,10 +56,9 @@ const Navbar = ({ user, isAdmin, onLogin, onLogout, onOpenAdmin }: {
       <div className="max-w-7xl mx-auto px-6 flex justify-between items-center">
         <div className="flex items-center gap-3">
           <img 
-            src="https://artifact.production.platform.com/files/artifact-image-1" 
+            src="/logo.svg" 
             alt="Logo El Estudiante" 
             className="w-12 h-12 object-contain"
-            referrerPolicy="no-referrer"
           />
           <span className="font-display font-bold text-xl tracking-tight">Librería "El Estudiante"</span>
         </div>
@@ -117,7 +117,10 @@ const Navbar = ({ user, isAdmin, onLogin, onLogout, onOpenAdmin }: {
               </button>
             )}
           </div>
-          <button className="bg-brand-teal text-white px-5 py-2.5 rounded-full font-semibold text-sm hover:bg-brand-teal/90 transition-all shadow-md shadow-brand-teal/20">
+          <button 
+            onClick={() => window.open('https://wa.me/51953366458', '_blank')}
+            className="bg-brand-teal text-white px-5 py-2.5 rounded-full font-semibold text-sm hover:bg-brand-teal/90 transition-all shadow-md shadow-brand-teal/20"
+          >
             Contactar
           </button>
         </div>
@@ -126,7 +129,7 @@ const Navbar = ({ user, isAdmin, onLogin, onLogout, onOpenAdmin }: {
   );
 };
 
-const Hero = () => {
+const Hero = ({ onSearch }: { onSearch: (term: string) => void }) => {
   return (
     <section className="relative pt-32 pb-20 overflow-hidden bg-bg-warm">
       <div className="absolute top-0 right-0 -z-10 w-1/2 h-full opacity-10 blur-3xl bg-brand-teal rounded-full transform translate-x-1/2 -translate-y-1/2"></div>
@@ -153,13 +156,17 @@ const Hero = () => {
           </p>
           
           <div className="flex flex-wrap gap-4">
-            <button className="bg-brand-teal text-white px-8 py-4 rounded-xl font-bold text-lg hover:scale-105 transition-transform flex items-center gap-2 shadow-xl shadow-brand-teal/25">
+            <button 
+              onClick={() => document.getElementById('catalogo')?.scrollIntoView({ behavior: 'smooth' })}
+              className="bg-brand-teal text-white px-8 py-4 rounded-xl font-bold text-lg hover:scale-105 transition-transform flex items-center gap-2 shadow-xl shadow-brand-teal/25"
+            >
               Explorar Catálogo <ChevronRight size={20} />
             </button>
             <div className="relative group max-w-xs w-full">
               <input 
                 type="text" 
                 placeholder="Buscar productos..." 
+                onChange={(e) => onSearch(e.target.value)}
                 className="w-full bg-white border-2 border-slate-200 rounded-xl px-4 py-4 pl-12 focus:border-brand-teal outline-none transition-colors"
               />
               <ShoppingBag className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-brand-teal transition-colors" size={20} />
@@ -215,7 +222,7 @@ const Hero = () => {
   );
 };
 
-const ProductCatalog = ({ products, loading }: { products: Product[], loading: boolean }) => {
+const ProductCatalog = ({ products, loading, searchTerm, setSearchTerm }: { products: Product[], loading: boolean, searchTerm: string, setSearchTerm: (term: string) => void }) => {
   const [activeCategory, setActiveCategory] = useState('todos');
   
   const categories = [
@@ -225,9 +232,12 @@ const ProductCatalog = ({ products, loading }: { products: Product[], loading: b
     { id: 'tecnologia', name: 'Tecnología', icon: <Monitor size={18} /> }
   ];
 
-  const filteredProducts = activeCategory === 'todos' 
-    ? products 
-    : products.filter(p => p.category === activeCategory);
+  const filteredProducts = products.filter(p => {
+    const matchesCategory = activeCategory === 'todos' || p.category === activeCategory;
+    const matchesSearch = p.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                         (p.description?.toLowerCase().includes(searchTerm.toLowerCase()));
+    return matchesCategory && matchesSearch;
+  });
 
   return (
     <section id="catalogo" className="py-24 bg-white">
@@ -260,11 +270,23 @@ const ProductCatalog = ({ products, loading }: { products: Product[], loading: b
             <Loader2 className="animate-spin mb-4" size={48} />
             <p className="font-bold text-lg">Cargando catálogo...</p>
           </div>
-        ) : products.length === 0 ? (
+        ) : filteredProducts.length === 0 ? (
           <div className="text-center py-24 bg-slate-50 rounded-[3rem] border-2 border-dashed border-slate-200">
-            <Package className="mx-auto text-slate-300 mb-6" size={64} />
-            <h3 className="text-2xl font-bold text-slate-800 mb-2">Aún no hay productos</h3>
-            <p className="text-slate-500">Estamos preparando las mejores ofertas para ti.</p>
+            <Search className="mx-auto text-slate-300 mb-6" size={64} />
+            <h3 className="text-2xl font-bold text-slate-800 mb-2">Sin coincidencias</h3>
+            <p className="text-slate-500">No encontramos productos que coincidan con "<span className="font-bold text-brand-teal">{searchTerm}</span>".</p>
+            <button 
+              onClick={() => {
+                const searchInputs = document.querySelectorAll('input[placeholder="Buscar productos..."]');
+                searchInputs.forEach(input => {
+                  (input as HTMLInputElement).value = '';
+                });
+                setSearchTerm('');
+              }}
+              className="mt-6 text-brand-teal font-bold hover:underline"
+            >
+              Limpiar búsqueda
+            </button>
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
@@ -504,10 +526,9 @@ const Footer = () => {
         <div className="col-span-1 md:col-span-2">
           <div className="flex items-center gap-3 mb-6">
             <img 
-              src="https://artifact.production.platform.com/files/artifact-image-1" 
+              src="/logo.svg" 
               alt="Logo El Estudiante" 
               className="w-10 h-10 object-contain"
-              referrerPolicy="no-referrer"
             />
             <span className="font-display font-bold text-xl text-white tracking-tight">Librería "El Estudiante"</span>
           </div>
@@ -559,6 +580,7 @@ export default function App() {
   const [isAdmin, setIsAdmin] = useState(false);
   const [showAdminPanel, setShowAdminPanel] = useState(false);
   const [isAuthLoading, setIsAuthLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
@@ -612,8 +634,13 @@ export default function App() {
         onOpenAdmin={() => setShowAdminPanel(true)}
       />
       <main>
-        <Hero />
-        <ProductCatalog products={products} loading={loading} />
+        <Hero onSearch={setSearchTerm} />
+        <ProductCatalog 
+          products={products} 
+          loading={loading} 
+          searchTerm={searchTerm} 
+          setSearchTerm={setSearchTerm} 
+        />
         <Benefits />
         <LocalPresence />
         <SocialShare />

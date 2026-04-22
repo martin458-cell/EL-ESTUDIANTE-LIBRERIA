@@ -129,6 +129,48 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ products, onClose }) => 
           </button>
         </div>
 
+        {/* Dashboard Stats */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 p-8 bg-slate-50 border-b border-slate-100">
+          <div className="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex items-center gap-4">
+            <div className="w-12 h-12 bg-teal-50 text-brand-teal rounded-xl flex items-center justify-center">
+              <Package size={24} />
+            </div>
+            <div>
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Total Productos</p>
+              <p className="text-2xl font-bold text-slate-900">{products.length}</p>
+            </div>
+          </div>
+          <div className="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex items-center gap-4">
+            <div className="w-12 h-12 bg-red-50 text-red-500 rounded-xl flex items-center justify-center">
+              <AlertCircle size={24} />
+            </div>
+            <div>
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Sin Stock</p>
+              <p className="text-2xl font-bold text-slate-900">{products.filter(p => p.stock === 0).length}</p>
+            </div>
+          </div>
+          <div className="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex items-center gap-4">
+            <div className="w-12 h-12 bg-orange-50 text-brand-orange rounded-xl flex items-center justify-center">
+              <DollarSign size={24} />
+            </div>
+            <div>
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Valor Inventario</p>
+              <p className="text-2xl font-bold text-slate-900">
+                {products.reduce((acc, p) => acc + (p.price * p.stock), 0).toLocaleString('es-PE', { style: 'currency', currency: 'PEN', maximumFractionDigits: 0 })}
+              </p>
+            </div>
+          </div>
+          <div className="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex items-center gap-4">
+            <div className="w-12 h-12 bg-blue-50 text-blue-500 rounded-xl flex items-center justify-center">
+              <Layers size={24} />
+            </div>
+            <div>
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Categorías</p>
+              <p className="text-2xl font-bold text-slate-900">{new Set(products.map(p => p.category)).size}</p>
+            </div>
+          </div>
+        </div>
+
         <div className="flex-1 overflow-hidden flex flex-col md:flex-row">
           {/* List Section */}
           <div className="flex-1 p-8 overflow-y-auto border-r border-slate-100">

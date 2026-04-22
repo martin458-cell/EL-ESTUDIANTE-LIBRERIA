@@ -56,8 +56,15 @@ export const loginWithGoogle = async () => {
   try {
     const result = await signInWithPopup(auth, googleProvider);
     return result.user;
-  } catch (error) {
-    console.error("Login Error:", error);
+  } catch (error: any) {
+    if (error.code === 'auth/unauthorized-domain') {
+      const message = `Error: El dominio "${window.location.hostname}" no está autorizado en Firebase.\n\nDebes ir a la consola de Firebase > Authentication > Settings > Authorized Domains y agregar este dominio.`;
+      console.error(message);
+      alert(message);
+    } else {
+      console.error("Login Error:", error);
+      alert("Error al iniciar sesión: " + (error.message || "Desconocido"));
+    }
     throw error;
   }
 };

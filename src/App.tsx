@@ -35,12 +35,13 @@ import { AdminPanel } from './components/Admin/AdminPanel';
 
 // --- Components ---
 
-const Navbar = ({ user, isAdmin, onLogin, onLogout, onOpenAdmin }: { 
+const Navbar = ({ user, isAdmin, onLogin, onLogout, onOpenAdmin, isLoading }: { 
   user: FirebaseUser | null, 
   isAdmin: boolean, 
   onLogin: () => void, 
   onLogout: () => void,
-  onOpenAdmin: () => void
+  onOpenAdmin: () => void,
+  isLoading: boolean
 }) => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
@@ -71,7 +72,11 @@ const Navbar = ({ user, isAdmin, onLogin, onLogout, onOpenAdmin }: {
 
         <div className="flex items-center gap-4">
           <div className="relative">
-            {user ? (
+            {isLoading ? (
+              <div className="p-2">
+                <Loader2 className="animate-spin text-slate-400" size={20} />
+              </div>
+            ) : user ? (
               <div className="flex items-center gap-3">
                 {isAdmin && (
                   <button 
@@ -632,6 +637,7 @@ export default function App() {
         onLogin={handleLogin} 
         onLogout={handleLogout}
         onOpenAdmin={() => setShowAdminPanel(true)}
+        isLoading={isAuthLoading}
       />
       <main>
         <Hero onSearch={setSearchTerm} />

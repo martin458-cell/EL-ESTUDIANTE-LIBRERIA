@@ -25,6 +25,7 @@ import {
 } from 'firebase/firestore';
 import { db, handleFirestoreError } from '../../lib/firebase';
 import { Product } from '../../hooks/useProducts';
+import { ProductForm } from './ProductForm';
 
 interface AdminPanelProps {
   products: Product[];
@@ -35,26 +36,18 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ products, onClose }) => 
   const [editingId, setEditingId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [isAdding, setIsAdding] = useState(false);
-  const [formData, setFormData] = useState<Partial<Product>>({
-    name: '',
-    price: 0,
-    stock: 0,
-    category: 'libros',
-    description: '',
-    imageUrl: '',
-    tag: ''
-  });
+  const [editingProduct, setEditingProduct] = useState<Partial<Product> | null>(null);
 
   const categories = ['libros', 'utiles', 'tecnologia'];
 
-  const handleEdit = (product: Product) => {
-    setEditingId(product.id);
-    setFormData(product);
+  const resetState = () => {
+    setEditingId(null);
+    setEditingProduct(null);
     setIsAdding(false);
   };
 
-  const resetForm = () => {
-    setFormData({
+  const handleAddNew = () => {
+    setEditingProduct({
       name: '',
       price: 0,
       stock: 0,
@@ -64,35 +57,24 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ products, onClose }) => 
       tag: ''
     });
     setEditingId(null);
+    setIsAdding(true);
+  };
+
+  const handleEdit = (product: Product) => {
+    setEditingId(product.id);
+    setEditingProduct(product);
     setIsAdding(false);
   };
 
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      if (file.size > 1024 * 1024) { // 1MB limit for Base64 in Firestore to be safe
-        alert('La imagen es demasiado grande. Por favor usa una de menos de 1MB.');
-        return;
-      }
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setFormData({ ...formData, imageUrl: reader.result as string });
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleFormSubmit = async (payload: any) => {
     try {
       const data = {
-        ...formData,
-        price: Number(formData.price),
-        stock: Number(formData.stock),
+        ...payload,
         updatedAt: serverTimestamp()
       };
 
       if (editingId) {
+        // En una actualización, NO enviamos createdAt ni id si los tuviera
         await updateDoc(doc(db, 'products', editingId), data);
       } else {
         await addDoc(collection(db, 'products'), {
@@ -100,8 +82,13 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ products, onClose }) => 
           createdAt: serverTimestamp()
         });
       }
-      resetForm();
-    } catch (error) {
+      resetState();
+    } catch (error: any) {
+      console.error("Submit Error:", error);
+      const msg = error.message?.includes('insufficient permissions') 
+        ? "Error: No tienes permisos o la imagen es muy pesada. Verifica que la imagen sea menor a 1MB."
+        : "Error al guardar: " + error.message;
+      alert(msg);
       handleFirestoreError(error, editingId ? 'update' : 'create', 'products');
     }
   };
@@ -201,7 +188,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ products, onClose }) => 
                 />
               </div>
               <button 
-                onClick={() => setIsAdding(true)}
+                onClick={handleAddNew}
                 className="bg-brand-teal text-white px-6 py-3 rounded-xl font-bold flex items-center gap-2 hover:bg-brand-teal/90 shadow-lg shadow-brand-teal/20"
               >
                 <Plus size={20} /> Nuevo
@@ -261,153 +248,21 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ products, onClose }) => 
 
           {/* Form Section */}
           <AnimatePresence>
-            {(isAdding || editingId) && (
+            {(isAdding || editingId) && editingProduct && (
               <motion.div 
                 initial={{ x: '100%' }}
                 animate={{ x: 0 }}
                 exit={{ x: '100%' }}
                 className="w-full md:w-96 bg-slate-50 p-8 overflow-y-auto shadow-[-20px_0_40px_-20px_rgba(0,0,0,0.1)] z-10"
               >
-                <div className="flex justify-between items-center mb-8">
-                  <h3 className="text-xl font-bold text-slate-900">
-                    {editingId ? 'Editar Producto' : 'Nuevo Producto'}
-                  </h3>
-                  <button onClick={resetForm} className="text-slate-400 hover:text-slate-600">
-                    <X size={20} />
-                  </button>
-                </div>
-
-                <form onSubmit={handleSubmit} className="space-y-6">
-                  <div>
-                    <label className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2 block text-center">Imagen del Producto</label>
-                    <div className="relative group">
-                      <div className={`w-full aspect-video rounded-2xl border-2 border-dashed transition-all flex flex-col items-center justify-center overflow-hidden bg-white ${formData.imageUrl ? 'border-brand-teal' : 'border-slate-200 group-hover:border-brand-teal/50'}`}>
-                        {formData.imageUrl ? (
-                          <div className="relative w-full h-full">
-                            <img src={formData.imageUrl} alt="Preview" className="w-full h-full object-cover" />
-                            <button 
-                              type="button"
-                              onClick={() => setFormData({...formData, imageUrl: ''})}
-                              className="absolute top-2 right-2 p-1.5 bg-red-500 text-white rounded-full shadow-lg hover:scale-110 transition-transform"
-                            >
-                              <X size={14} />
-                            </button>
-                          </div>
-                        ) : (
-                          <label className="w-full h-full flex flex-col items-center justify-center cursor-pointer">
-                            <input 
-                              type="file" 
-                              accept="image/*" 
-                              onChange={handleImageChange}
-                              className="hidden" 
-                            />
-                            <div className="p-4 bg-slate-50 rounded-2xl text-slate-400 group-hover:text-brand-teal mb-3 transition-colors">
-                              <ImageIcon size={32} />
-                            </div>
-                            <span className="text-xs font-bold text-slate-500">Haz clic para subir imagen</span>
-                            <span className="text-[10px] text-slate-400 mt-1">Recomendado: 800x800px (Max 1MB)</span>
-                          </label>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2 block">O pega una URL o ruta del repositorio</label>
-                    <div className="relative">
-                      <LinkIcon className="absolute left-3 top-3 text-slate-300" size={18} />
-                      <input 
-                        type="text" 
-                        value={formData.imageUrl}
-                        onChange={e => setFormData({...formData, imageUrl: e.target.value})}
-                        className="w-full bg-white border border-slate-200 rounded-xl py-2.5 pl-10 pr-4 focus:border-brand-teal outline-none transition-colors text-xs"
-                        placeholder="/public/products/item1.jpg"
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2 block">Nombre</label>
-                    <div className="relative">
-                      <TagIcon className="absolute left-3 top-3 text-slate-300" size={18} />
-                      <input 
-                        required
-                        type="text" 
-                        value={formData.name}
-                        onChange={e => setFormData({...formData, name: e.target.value})}
-                        className="w-full bg-white border border-slate-200 rounded-xl py-2.5 pl-10 pr-4 focus:border-brand-teal outline-none transition-colors"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2 block">Precio (S/)</label>
-                      <div className="relative">
-                        <DollarSign className="absolute left-3 top-3 text-slate-300" size={18} />
-                        <input 
-                          required
-                          type="number" 
-                          step="0.01"
-                          value={formData.price}
-                          onChange={e => setFormData({...formData, price: e.target.value as any})}
-                          className="w-full bg-white border border-slate-200 rounded-xl py-2.5 pl-10 pr-4 focus:border-brand-teal outline-none transition-colors"
-                        />
-                      </div>
-                    </div>
-                    <div>
-                      <label className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2 block">Stock</label>
-                      <div className="relative">
-                        <Layers className="absolute left-3 top-3 text-slate-300" size={18} />
-                        <input 
-                          required
-                          type="number" 
-                          value={formData.stock}
-                          onChange={e => setFormData({...formData, stock: e.target.value as any})}
-                          className="w-full bg-white border border-slate-200 rounded-xl py-2.5 pl-10 pr-4 focus:border-brand-teal outline-none transition-colors"
-                        />
-                      </div>
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2 block">Categoría</label>
-                    <div className="flex flex-wrap gap-2">
-                      {categories.map(cat => (
-                        <button
-                          key={cat}
-                          type="button"
-                          onClick={() => setFormData({...formData, category: cat})}
-                          className={`px-4 py-2 rounded-lg text-xs font-bold capitalize border transition-all ${
-                            formData.category === cat 
-                              ? 'bg-brand-teal text-white border-brand-teal shadow-md' 
-                              : 'bg-white text-slate-600 border-slate-200 hover:border-brand-teal/50'
-                          }`}
-                        >
-                          {cat}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2 block">Etiqueta (Opcional)</label>
-                    <input 
-                      type="text" 
-                      value={formData.tag}
-                      onChange={e => setFormData({...formData, tag: e.target.value})}
-                      className="w-full bg-white border border-slate-200 rounded-xl py-2.5 px-4 focus:border-brand-teal outline-none transition-colors"
-                      placeholder="Oferta, Nuevo, etc."
-                    />
-                  </div>
-
-                  <button 
-                    type="submit"
-                    className="w-full bg-brand-teal text-white py-4 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-brand-teal/90 shadow-xl shadow-brand-teal/20 mt-8"
-                  >
-                    <Save size={20} /> {editingId ? 'Actualizar Producto' : 'Guardar Producto'}
-                  </button>
-                </form>
+                <ProductForm 
+                  key={editingId || 'new'}
+                  initialData={editingProduct}
+                  editingId={editingId}
+                  categories={categories}
+                  onSubmit={handleFormSubmit}
+                  onCancel={resetState}
+                />
               </motion.div>
             )}
           </AnimatePresence>

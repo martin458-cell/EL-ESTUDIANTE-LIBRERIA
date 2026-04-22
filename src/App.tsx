@@ -416,6 +416,8 @@ const Hero = ({ onSearch, products }: { onSearch: (term: string) => void, produc
 const ProductCatalog = ({ products, loading, searchTerm, setSearchTerm }: { products: Product[], loading: boolean, searchTerm: string, setSearchTerm: (term: string) => void }) => {
   const [activeCategory, setActiveCategory] = useState('todos');
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const productsPerPage = 20;
   
   const categories = [
     { id: 'todos', name: 'Todos', icon: <ShoppingBag size={18} /> },
@@ -427,13 +429,32 @@ const ProductCatalog = ({ products, loading, searchTerm, setSearchTerm }: { prod
   const filteredProducts = products.filter(p => {
     const matchesCategory = activeCategory === 'todos' || p.category === activeCategory;
     const searchLower = searchTerm.toLowerCase();
+    
+    // Búsqueda segura para evitar crashes si faltan datos
+    const name = p.name?.toLowerCase() || '';
+    const sku = p.sku?.toLowerCase() || '';
+    const brand = p.authorOrBrand?.toLowerCase() || '';
+    const desc = p.description?.toLowerCase() || '';
+    
     const matchesSearch = 
-      p.name.toLowerCase().includes(searchLower) || 
-      p.sku.toLowerCase().includes(searchLower) ||
-      p.authorOrBrand.toLowerCase().includes(searchLower) ||
-      (p.description?.toLowerCase().includes(searchLower));
+      name.includes(searchLower) || 
+      sku.includes(searchLower) ||
+      brand.includes(searchLower) ||
+      desc.includes(searchLower);
+      
     return matchesCategory && matchesSearch;
   });
+
+  // Reset to page 1 on filter/search change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [activeCategory, searchTerm]);
+
+  const totalPages = Math.ceil(filteredProducts.length / productsPerPage);
+  const paginatedProducts = filteredProducts.slice(
+    (currentPage - 1) * productsPerPage,
+    currentPage * productsPerPage
+  );
 
   return (
     <section id="catalogo" className="py-24 bg-white">
@@ -473,7 +494,7 @@ const ProductCatalog = ({ products, loading, searchTerm, setSearchTerm }: { prod
             <p className="text-slate-500">No encontramos productos que coincidan con "<span className="font-bold text-brand-teal">{searchTerm}</span>".</p>
             <button 
               onClick={() => {
-                const searchInputs = document.querySelectorAll('input[placeholder="Buscar productos..."]');
+                const searchInputs = document.querySelectorAll('input[placeholder*="Buscar"]');
                 searchInputs.forEach(input => {
                   (input as HTMLInputElement).value = '';
                 });
@@ -485,75 +506,110 @@ const ProductCatalog = ({ products, loading, searchTerm, setSearchTerm }: { prod
             </button>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-            <AnimatePresence mode="popLayout">
-              {filteredProducts.map((product) => (
-                <motion.div
-                  layout
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.9 }}
-                  transition={{ duration: 0.3 }}
-                  key={product.id}
-                  onClick={() => setSelectedProduct(product)}
-                  className="group relative bg-white rounded-3xl border border-slate-100 overflow-hidden hover:shadow-2xl transition-all hover:-translate-y-2 cursor-pointer"
-                >
-                  <div className="relative aspect-square overflow-hidden bg-slate-50">
-                    <img 
-                      src={product.imageUrl || `https://picsum.photos/seed/${product.id}/400/400`} 
-                      alt={product.name} 
-                      className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
-                      referrerPolicy="no-referrer"
-                    />
-                    <div className="absolute top-4 left-4 flex flex-col gap-2">
-                      {product.featured && (
-                        <div className="bg-yellow-400 text-slate-900 text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full shadow-lg flex items-center gap-1 border border-yellow-500">
-                          <Star size={10} fill="currentColor" /> Novedad
+          <>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+              <AnimatePresence mode="popLayout">
+                {paginatedProducts.map((product) => (
+                  <motion.div
+                    layout
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.9 }}
+                    transition={{ duration: 0.3 }}
+                    key={product.id}
+                    onClick={() => setSelectedProduct(product)}
+                    className="group relative bg-white rounded-2xl border border-slate-100 overflow-hidden hover:shadow-xl transition-all hover:-translate-y-1 cursor-pointer"
+                  >
+                    <div className="relative aspect-square overflow-hidden bg-slate-50">
+                      <img 
+                        src={product.imageUrl || `https://picsum.photos/seed/${product.id}/400/400`} 
+                        alt={product.name} 
+                        className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                        referrerPolicy="no-referrer"
+                      />
+                      <div className="absolute top-3 left-3 flex flex-col gap-1.5">
+                        {product.featured && (
+                          <div className="bg-yellow-400 text-slate-900 text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full shadow-lg flex items-center gap-1 border border-yellow-500">
+                            <Star size={8} fill="currentColor" /> Novedad
+                          </div>
+                        )}
+                        {product.stock <= product.minStock && product.stock > 0 && (
+                          <div className="bg-orange-500 text-white text-[8px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full shadow-lg border border-orange-600">
+                            ¡Pocas!
+                          </div>
+                        )}
+                        {product.stock === 0 && (
+                          <div className="bg-slate-800 text-white text-[8px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full shadow-lg">
+                            Agotado
+                          </div>
+                        )}
+                      </div>
+                      <div className="absolute inset-x-0 bottom-0 p-4 translate-y-full group-hover:translate-y-0 transition-transform duration-300 bg-gradient-to-t from-black/80 via-black/40 to-transparent">
+                        <div className="w-full bg-brand-teal text-white py-2.5 rounded-xl font-bold text-sm flex items-center justify-center gap-2 hover:bg-brand-teal/90 shadow-xl">
+                          <ExternalLink size={16} /> Detalles
                         </div>
-                      )}
-                      {product.stock <= product.minStock && product.stock > 0 && (
-                        <div className="bg-orange-500 text-white text-[10px] font-bold uppercase tracking-widest px-3 py-1 rounded-full shadow-lg border border-orange-600">
-                          ¡Pocas unidades!
-                        </div>
-                      )}
-                      {product.stock === 0 && (
-                        <div className="bg-slate-800 text-white text-[10px] font-bold uppercase tracking-widest px-3 py-1 rounded-full shadow-lg">
-                          Agotado
-                        </div>
-                      )}
-                    </div>
-                    <div className="absolute inset-x-0 bottom-0 p-6 translate-y-full group-hover:translate-y-0 transition-transform duration-300 bg-gradient-to-t from-black/80 via-black/40 to-transparent">
-                      <button 
-                        className="w-full bg-brand-teal text-white py-4 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-brand-teal/90 shadow-xl"
-                      >
-                        <ExternalLink size={20} /> Ver Detalles
-                      </button>
-                    </div>
-                  </div>
-                  
-                  <div className="p-6">
-                    <div className="flex justify-between items-start mb-1">
-                      <div className="min-w-0">
-                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">{product.sku}</p>
-                        <h3 className="font-bold text-lg text-slate-800 group-hover:text-brand-teal transition-colors leading-tight truncate">
-                          {product.name}
-                        </h3>
-                        <p className="text-xs text-slate-500 mt-1">{product.authorOrBrand}</p>
                       </div>
                     </div>
-                    <div className="flex justify-between items-center mt-4 pt-4 border-t border-slate-50">
-                      <p className="text-brand-orange font-display font-bold text-xl">
-                        {product.price.toLocaleString('es-PE', { style: 'currency', currency: 'PEN' })}
-                      </p>
-                      <span className="bg-teal-50 text-brand-teal px-2 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider">
-                        {product.category}
-                      </span>
+                    
+                    <div className="p-4">
+                      <div className="min-w-0">
+                        <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">{product.sku}</p>
+                        <h3 className="font-bold text-sm text-slate-800 group-hover:text-brand-teal transition-colors leading-tight truncate">
+                          {product.name}
+                        </h3>
+                        <p className="text-[10px] text-slate-500 mt-1 truncate">{product.authorOrBrand}</p>
+                      </div>
+                      <div className="flex justify-between items-center mt-3 pt-3 border-t border-slate-50">
+                        <p className="text-brand-orange font-display font-bold text-lg">
+                          {product.price.toLocaleString('es-PE', { style: 'currency', currency: 'PEN' })}
+                        </p>
+                        <span className="bg-teal-50 text-brand-teal px-1.5 py-0.5 rounded-md text-[9px] font-bold uppercase tracking-wider">
+                          {product.category}
+                        </span>
+                      </div>
                     </div>
-                  </div>
-                </motion.div>
-              ))}
-            </AnimatePresence>
-          </div>
+                  </motion.div>
+                ))}
+              </AnimatePresence>
+            </div>
+
+            {/* Pagination Controls */}
+            {totalPages > 1 && (
+              <div className="mt-12 flex justify-center items-center gap-2">
+                <button
+                  onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                  disabled={currentPage === 1}
+                  className="p-2 rounded-xl border border-slate-200 disabled:opacity-30 disabled:cursor-not-allowed hover:bg-slate-50 transition-colors"
+                >
+                  <ChevronLeft size={20} />
+                </button>
+                
+                <div className="flex gap-2">
+                  {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+                    <button
+                      key={page}
+                      onClick={() => setCurrentPage(page)}
+                      className={`w-10 h-10 rounded-xl font-bold text-sm transition-all ${
+                        currentPage === page
+                          ? 'bg-brand-teal text-white shadow-lg shadow-brand-teal/20'
+                          : 'bg-white border border-slate-200 text-slate-600 hover:border-brand-teal hover:text-brand-teal'
+                      }`}
+                    >
+                      {page}
+                    </button>
+                  ))}
+                </div>
+
+                <button
+                  onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                  disabled={currentPage === totalPages}
+                  className="p-2 rounded-xl border border-slate-200 disabled:opacity-30 disabled:cursor-not-allowed hover:bg-slate-50 transition-colors"
+                >
+                  <ChevronRight size={20} />
+                </button>
+              </div>
+            )}
+          </>
         )}
 
         <AnimatePresence>

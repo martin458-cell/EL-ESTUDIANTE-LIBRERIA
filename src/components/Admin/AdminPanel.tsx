@@ -67,6 +67,21 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ products, onClose }) => 
     setIsAdding(false);
   };
 
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 1024 * 1024) { // 1MB limit for Base64 in Firestore to be safe
+        alert('La imagen es demasiado grande. Por favor usa una de menos de 1MB.');
+        return;
+      }
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setFormData({ ...formData, imageUrl: reader.result as string });
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
@@ -264,6 +279,54 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ products, onClose }) => 
 
                 <form onSubmit={handleSubmit} className="space-y-6">
                   <div>
+                    <label className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2 block text-center">Imagen del Producto</label>
+                    <div className="relative group">
+                      <div className={`w-full aspect-video rounded-2xl border-2 border-dashed transition-all flex flex-col items-center justify-center overflow-hidden bg-white ${formData.imageUrl ? 'border-brand-teal' : 'border-slate-200 group-hover:border-brand-teal/50'}`}>
+                        {formData.imageUrl ? (
+                          <div className="relative w-full h-full">
+                            <img src={formData.imageUrl} alt="Preview" className="w-full h-full object-cover" />
+                            <button 
+                              type="button"
+                              onClick={() => setFormData({...formData, imageUrl: ''})}
+                              className="absolute top-2 right-2 p-1.5 bg-red-500 text-white rounded-full shadow-lg hover:scale-110 transition-transform"
+                            >
+                              <X size={14} />
+                            </button>
+                          </div>
+                        ) : (
+                          <label className="w-full h-full flex flex-col items-center justify-center cursor-pointer">
+                            <input 
+                              type="file" 
+                              accept="image/*" 
+                              onChange={handleImageChange}
+                              className="hidden" 
+                            />
+                            <div className="p-4 bg-slate-50 rounded-2xl text-slate-400 group-hover:text-brand-teal mb-3 transition-colors">
+                              <ImageIcon size={32} />
+                            </div>
+                            <span className="text-xs font-bold text-slate-500">Haz clic para subir imagen</span>
+                            <span className="text-[10px] text-slate-400 mt-1">Recomendado: 800x800px (Max 1MB)</span>
+                          </label>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2 block">O pega una URL o ruta del repositorio</label>
+                    <div className="relative">
+                      <LinkIcon className="absolute left-3 top-3 text-slate-300" size={18} />
+                      <input 
+                        type="text" 
+                        value={formData.imageUrl}
+                        onChange={e => setFormData({...formData, imageUrl: e.target.value})}
+                        className="w-full bg-white border border-slate-200 rounded-xl py-2.5 pl-10 pr-4 focus:border-brand-teal outline-none transition-colors text-xs"
+                        placeholder="/public/products/item1.jpg"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
                     <label className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2 block">Nombre</label>
                     <div className="relative">
                       <TagIcon className="absolute left-3 top-3 text-slate-300" size={18} />
@@ -324,20 +387,6 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ products, onClose }) => 
                           {cat}
                         </button>
                       ))}
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2 block">URL Imagen</label>
-                    <div className="relative">
-                      <LinkIcon className="absolute left-3 top-3 text-slate-300" size={18} />
-                      <input 
-                        type="url" 
-                        value={formData.imageUrl}
-                        onChange={e => setFormData({...formData, imageUrl: e.target.value})}
-                        className="w-full bg-white border border-slate-200 rounded-xl py-2.5 pl-10 pr-4 focus:border-brand-teal outline-none transition-colors"
-                        placeholder="https://..."
-                      />
                     </div>
                   </div>
 

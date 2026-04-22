@@ -24,20 +24,125 @@ import {
   LogOut,
   Loader2,
   Package,
-  Search
+  Search,
+  Star,
+  X,
+  ChevronLeft,
+  Calendar
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { auth, db, loginWithGoogle, logout } from './lib/firebase';
 import { useProducts, Product } from './hooks/useProducts';
-import { AdminPanel } from './components/Admin/AdminPanel';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { CatalogManager } from './components/CatalogManager';
 
 // --- Components ---
 
+const ProductDetailModal = ({ product, onClose }: { product: Product, onClose: () => void }) => {
+  if (!product) return null;
+
+  return (
+    <motion.div 
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md"
+      onClick={onClose}
+    >
+      <motion.div 
+        initial={{ scale: 0.9, y: 20, opacity: 0 }}
+        animate={{ scale: 1, y: 0, opacity: 1 }}
+        exit={{ scale: 0.9, y: 20, opacity: 0 }}
+        className="bg-white w-full max-w-4xl rounded-[2.5rem] shadow-2xl overflow-hidden flex flex-col md:flex-row relative"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <button 
+          onClick={onClose}
+          className="absolute top-6 right-6 z-10 p-2 bg-white/80 backdrop-blur-md hover:bg-white rounded-full text-slate-500 shadow-sm transition-all"
+        >
+          <X size={20} />
+        </button>
+
+        {/* Image Preview */}
+        <div className="md:w-1/2 bg-slate-50 aspect-square md:aspect-auto relative overflow-hidden">
+          <img 
+            src={product.imageUrl || `https://picsum.photos/seed/${product.id}/600/600`} 
+            alt={product.name} 
+            className="w-full h-full object-cover"
+            referrerPolicy="no-referrer"
+          />
+          {product.featured && (
+            <div className="absolute top-6 left-6 bg-yellow-400 text-slate-900 text-[10px] font-black uppercase tracking-widest px-4 py-1.5 rounded-full shadow-lg flex items-center gap-2 border border-yellow-500">
+              <Star size={12} fill="currentColor" /> Novedad
+            </div>
+          )}
+        </div>
+
+        {/* Content */}
+        <div className="md:w-1/2 p-8 md:p-12 flex flex-col justify-between bg-white">
+          <div>
+            <div className="mb-6">
+              <span className="inline-block px-3 py-1 rounded-full bg-teal-50 text-brand-teal text-[10px] font-black uppercase tracking-widest border border-teal-100 mb-4">
+                {product.category}
+              </span>
+              <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">SKU: {product.sku}</p>
+              <h2 className="text-3xl md:text-4xl font-display font-bold text-slate-900 leading-tight mb-2">
+                {product.name}
+              </h2>
+              {product.authorOrBrand && (
+                <p className="text-lg text-slate-500 font-medium">Por: <span className="text-slate-800">{product.authorOrBrand}</span></p>
+              )}
+            </div>
+
+            <div className="space-y-6 mb-8 pt-6 border-t border-slate-50">
+              {product.description && (
+                <div>
+                  <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Descripción</h4>
+                  <p className="text-slate-600 leading-relaxed">{product.description}</p>
+                </div>
+              )}
+              
+              <div className="flex gap-8">
+                <div>
+                  <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Disponibilidad</h4>
+                  <p className={`font-bold ${product.stock > 0 ? 'text-green-600' : 'text-red-500'}`}>
+                    {product.stock > 0 ? `Stock: ${product.stock} unidades` : 'Agotado'}
+                  </p>
+                </div>
+                <div>
+                  <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Estado</h4>
+                  <p className="font-bold text-slate-700">Producto Original</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="pt-6 border-t border-slate-50 flex flex-col sm:flex-row items-center gap-6">
+            <div className="text-left w-full sm:w-auto">
+              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Precio Sugerido</p>
+              <p className="text-3xl md:text-4xl font-display font-bold text-brand-orange">
+                {product.price.toLocaleString('es-PE', { style: 'currency', currency: 'PEN' })}
+              </p>
+            </div>
+            <a 
+              href={`https://wa.me/51953366458?text=Hola,%20me%20interesa%20el%20producto:%20${product.name}%20(SKU:%20${product.sku})`}
+              target="_blank"
+              rel="noreferrer"
+              className="flex-1 w-full bg-slate-900 text-white py-5 rounded-2xl font-bold flex items-center justify-center gap-3 hover:bg-slate-800 transition-all shadow-xl hover:-translate-y-1"
+            >
+              <ShoppingBag size={20} /> Solicitar por WhatsApp
+            </a>
+          </div>
+        </div>
+      </motion.div>
+    </motion.div>
+  );
+};
+
 const Navbar = ({ user, isAdmin, onLogin, onLogout, onOpenAdmin, isLoading }: { 
   user: FirebaseUser | null, 
-  isAdmin: boolean, 
+  isAdmin: boolean,
   onLogin: () => void, 
   onLogout: () => void,
   onOpenAdmin: () => void,
@@ -81,8 +186,8 @@ const Navbar = ({ user, isAdmin, onLogin, onLogout, onOpenAdmin, isLoading }: {
                 {isAdmin && (
                   <button 
                     onClick={onOpenAdmin}
-                    className="p-2.5 bg-brand-teal/10 text-brand-teal rounded-full hover:bg-brand-teal/20 transition-colors"
-                    title="Panel de Administración"
+                    className="p-2.5 bg-brand-teal text-white rounded-xl hover:bg-brand-teal/90 transition-all shadow-lg shadow-brand-teal/20"
+                    title="Gestionar Catálogo"
                   >
                     <Settings size={20} />
                   </button>
@@ -118,7 +223,7 @@ const Navbar = ({ user, isAdmin, onLogin, onLogout, onOpenAdmin, isLoading }: {
                 onClick={onLogin}
                 className="flex items-center gap-2 text-slate-600 font-bold text-sm hover:text-brand-teal transition-colors px-4 py-2"
               >
-                <User size={18} /> Admin
+                <User size={18} /> Mi cuenta
               </button>
             )}
           </div>
@@ -134,19 +239,123 @@ const Navbar = ({ user, isAdmin, onLogin, onLogout, onOpenAdmin, isLoading }: {
   );
 };
 
-const Hero = ({ onSearch }: { onSearch: (term: string) => void }) => {
+const LatestNewsCarousel = ({ products }: { products: Product[] }) => {
+  const [index, setIndex] = useState(0);
+  const latestProducts = [...products]
+    .sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0))
+    .slice(0, 10);
+
+  useEffect(() => {
+    if (latestProducts.length <= 1) return;
+    const interval = setInterval(() => {
+      setIndex((prev) => (prev + 1) % latestProducts.length);
+    }, 5000);
+    return () => clearInterval(interval);
+  }, [latestProducts.length]);
+
+  if (latestProducts.length === 0) {
+    return (
+      <div className="bg-slate-100 rounded-[2.5rem] w-full aspect-[4/3] flex items-center justify-center text-slate-400">
+        <Package size={48} className="animate-pulse" />
+      </div>
+    );
+  }
+
+  const current = latestProducts[index];
+
   return (
-    <section className="relative pt-32 pb-20 overflow-hidden bg-bg-warm">
+    <div className="relative group perspective-1000">
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={current.id}
+          initial={{ opacity: 0, x: 20, rotateY: -10 }}
+          animate={{ opacity: 1, x: 0, rotateY: 0 }}
+          exit={{ opacity: 0, x: -20, rotateY: 10 }}
+          transition={{ duration: 0.6, ease: "easeOut" }}
+          className="bg-white p-4 rounded-[2.5rem] shadow-2xl overflow-hidden border border-slate-100"
+        >
+          <div className="relative aspect-[4/3] overflow-hidden rounded-[2rem] bg-slate-50">
+            <img 
+              src={current.imageUrl || `https://picsum.photos/seed/${current.id}/800/600`} 
+              alt={current.name} 
+              className="w-full h-full object-cover"
+              referrerPolicy="no-referrer"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-slate-900/80 via-transparent to-transparent"></div>
+            
+            <div className="absolute top-4 right-4 bg-brand-orange text-white text-[10px] font-black uppercase tracking-widest px-4 py-1.5 rounded-full shadow-lg flex items-center gap-2">
+              <Star size={12} fill="currentColor" /> ¡Recién Llegado!
+            </div>
+
+            <div className="absolute bottom-6 left-6 right-6 text-left">
+              <span className="inline-block px-2 py-0.5 rounded-lg bg-white/20 backdrop-blur-md text-white text-[10px] font-bold uppercase tracking-wider mb-2 border border-white/20">
+                {current.category}
+              </span>
+              <h3 className="text-xl md:text-2xl font-bold text-white leading-tight drop-shadow-md truncate">
+                {current.name}
+              </h3>
+              <p className="text-white/80 text-sm mt-1 font-medium truncate">{current.authorOrBrand}</p>
+            </div>
+          </div>
+          
+          <div className="mt-8 flex gap-4 items-center px-2">
+            <div className="p-4 bg-teal-50 rounded-2xl flex-1 flex flex-col items-center justify-center border border-brand-teal/10">
+              <ShoppingBag className="text-brand-teal mb-1" size={24} />
+              <span className="text-[10px] font-bold text-brand-teal uppercase tracking-widest">En Tienda</span>
+            </div>
+            <div className="flex-[1.5] text-right">
+              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Precio Puquio</p>
+              <p className="text-2xl font-display font-bold text-slate-900">
+                {current.price.toLocaleString('es-PE', { style: 'currency', currency: 'PEN' })}
+              </p>
+            </div>
+          </div>
+        </motion.div>
+      </AnimatePresence>
+
+      <div className="absolute -bottom-10 left-1/2 -translate-x-1/2 flex gap-2">
+        {latestProducts.map((_, i) => (
+          <button
+            key={i}
+            onClick={() => setIndex(i)}
+            className={`w-2 h-2 rounded-full transition-all ${index === i ? 'bg-brand-teal w-6' : 'bg-slate-300'}`}
+          />
+        ))}
+      </div>
+      
+      <div className="absolute top-1/2 -left-4 -translate-y-1/2 hidden lg:flex flex-col gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+        <button 
+          onClick={() => setIndex((prev) => (prev - 1 + latestProducts.length) % latestProducts.length)}
+          className="p-3 bg-white shadow-xl rounded-full text-slate-400 hover:text-brand-teal transition-colors border border-slate-50"
+        >
+          <ChevronLeft size={20} />
+        </button>
+      </div>
+      <div className="absolute top-1/2 -right-4 -translate-y-1/2 hidden lg:flex flex-col gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+        <button 
+          onClick={() => setIndex((prev) => (prev + 1) % latestProducts.length)}
+          className="p-3 bg-white shadow-xl rounded-full text-slate-400 hover:text-brand-teal transition-colors border border-slate-50"
+        >
+          <ChevronRight size={20} />
+        </button>
+      </div>
+    </div>
+  );
+};
+
+const Hero = ({ onSearch, products }: { onSearch: (term: string) => void, products: Product[] }) => {
+  return (
+    <section className="relative pt-32 pb-24 overflow-hidden bg-bg-warm">
       <div className="absolute top-0 right-0 -z-10 w-1/2 h-full opacity-10 blur-3xl bg-brand-teal rounded-full transform translate-x-1/2 -translate-y-1/2"></div>
       <div className="absolute bottom-0 left-0 -z-10 w-1/3 h-1/2 opacity-5 blur-3xl bg-brand-orange rounded-full transform -translate-x-1/2 translate-y-1/2"></div>
       
-      <div className="max-w-7xl mx-auto px-6 grid md:grid-cols-2 gap-12 items-center">
+      <div className="max-w-7xl mx-auto px-6 grid md:grid-cols-2 gap-16 items-center">
         <motion.div
           initial={{ opacity: 0, x: -30 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.8, ease: "easeOut" }}
         >
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-teal-50 text-brand-teal text-xs font-bold uppercase tracking-wider mb-6 border border-brand-teal/20">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-teal-50 text-brand-teal text-xs font-bold uppercase tracking-wider mb-8 border border-brand-teal/20">
             <span className="relative flex h-2 w-2">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-brand-teal opacity-75"></span>
               <span className="relative inline-flex rounded-full h-2 w-2 bg-brand-teal"></span>
@@ -154,27 +363,27 @@ const Hero = ({ onSearch }: { onSearch: (term: string) => void }) => {
             Tu aliado educativo en Puquio
           </div>
           <h1 className="font-display text-5xl md:text-7xl font-bold leading-[1.1] mb-6 text-slate-900">
-            Todo lo que necesitas para <span className="text-brand-teal">estudiar</span> y <span className="text-brand-orange">trabajar</span>.
+            Crecemos junto a <span className="text-brand-teal">tu futuro</span> y nuestra ciudad.
           </h1>
           <p className="text-lg text-slate-600 mb-10 max-w-lg leading-relaxed">
-            Impulsamos el futuro de Puquio con los mejores libros, útiles de calidad y tecnología de punta. ¡Todo a tu alcance!
+            Explora las últimas novedades que hemos traído a Puquio. Tecnología, libros y útiles para potenciar tu talento.
           </p>
           
           <div className="flex flex-wrap gap-4">
             <button 
               onClick={() => document.getElementById('catalogo')?.scrollIntoView({ behavior: 'smooth' })}
-              className="bg-brand-teal text-white px-8 py-4 rounded-xl font-bold text-lg hover:scale-105 transition-transform flex items-center gap-2 shadow-xl shadow-brand-teal/25"
+              className="bg-brand-teal text-white px-8 py-4 rounded-2xl font-bold text-lg hover:shadow-2xl transition-all flex items-center gap-2 shadow-xl shadow-brand-teal/25 hover:-translate-y-1"
             >
               Explorar Catálogo <ChevronRight size={20} />
             </button>
             <div className="relative group max-w-xs w-full">
               <input 
                 type="text" 
-                placeholder="Buscar productos..." 
+                placeholder="Buscar en la tienda..." 
                 onChange={(e) => onSearch(e.target.value)}
-                className="w-full bg-white border-2 border-slate-200 rounded-xl px-4 py-4 pl-12 focus:border-brand-teal outline-none transition-colors"
+                className="w-full bg-white border-2 border-slate-100 rounded-2xl px-4 py-4 pl-12 focus:border-brand-teal focus:ring-0 outline-none transition-all shadow-sm"
               />
-              <ShoppingBag className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-brand-teal transition-colors" size={20} />
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-brand-teal transition-colors" size={20} />
             </div>
           </div>
         </motion.div>
@@ -183,44 +392,21 @@ const Hero = ({ onSearch }: { onSearch: (term: string) => void }) => {
           initial={{ opacity: 0, scale: 0.9, rotateY: 15 }}
           animate={{ opacity: 1, scale: 1, rotateY: 0 }}
           transition={{ duration: 1, ease: "easeOut" }}
-          className="relative perspective-1000 hidden md:block"
+          className="relative hidden md:block"
         >
-          <div className="bg-white p-4 rounded-[2.5rem] shadow-2xl overflow-hidden transform rotate-2 border border-slate-100">
-            <img 
-              src="https://picsum.photos/seed/libreria/800/600" 
-              alt="Education and Tech" 
-              className="rounded-[2rem] w-full h-auto object-cover aspect-[4/3] shadow-inner"
-              referrerPolicy="no-referrer"
-            />
-            <div className="mt-8 flex gap-4">
-              <div className="p-5 bg-teal-50 rounded-2xl flex-1 flex flex-col items-center justify-center border border-brand-teal/10">
-                <BookOpen className="text-brand-teal mb-2" size={32} />
-                <span className="text-sm font-bold text-slate-800 tracking-tight">Cultura</span>
+          <div className="relative">
+            <LatestNewsCarousel products={products} />
+            
+            <div className="absolute -top-6 -left-6 bg-white p-5 rounded-3xl shadow-xl border border-slate-50 flex items-center gap-4">
+              <div className="w-12 h-12 bg-orange-100 text-brand-orange rounded-2xl flex items-center justify-center">
+                <Calendar size={24} />
               </div>
-              <div className="p-5 bg-orange-50 rounded-2xl flex-1 flex flex-col items-center justify-center border border-brand-orange/10">
-                <Monitor className="text-brand-orange mb-2" size={32} />
-                <span className="text-sm font-bold text-slate-800 tracking-tight">Tecnología</span>
-              </div>
-              <div className="p-5 bg-yellow-50 rounded-2xl flex-1 flex flex-col items-center justify-center border border-brand-yellow/30">
-                <PenTool className="text-brand-orange mb-2" size={32} />
-                <span className="text-sm font-bold text-slate-800 tracking-tight">Útiles</span>
+              <div>
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Lo Nuevo</p>
+                <p className="font-bold text-slate-900 text-sm">Escaparate Digital</p>
               </div>
             </div>
           </div>
-          
-          <motion.div 
-            animate={{ y: [0, -10, 0] }}
-            transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-            className="absolute -top-6 -right-6 bg-white p-4 rounded-2xl shadow-xl border border-slate-100 flex items-center gap-3"
-          >
-            <div className="w-10 h-10 bg-brand-green/20 rounded-full flex items-center justify-center text-brand-green">
-              <CheckCircle2 size={24} />
-            </div>
-            <div>
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Confianza</p>
-              <p className="font-bold text-slate-800 text-sm">Empresa Puquiana</p>
-            </div>
-          </motion.div>
         </motion.div>
       </div>
     </section>
@@ -229,6 +415,7 @@ const Hero = ({ onSearch }: { onSearch: (term: string) => void }) => {
 
 const ProductCatalog = ({ products, loading, searchTerm, setSearchTerm }: { products: Product[], loading: boolean, searchTerm: string, setSearchTerm: (term: string) => void }) => {
   const [activeCategory, setActiveCategory] = useState('todos');
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   
   const categories = [
     { id: 'todos', name: 'Todos', icon: <ShoppingBag size={18} /> },
@@ -239,8 +426,12 @@ const ProductCatalog = ({ products, loading, searchTerm, setSearchTerm }: { prod
 
   const filteredProducts = products.filter(p => {
     const matchesCategory = activeCategory === 'todos' || p.category === activeCategory;
-    const matchesSearch = p.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                         (p.description?.toLowerCase().includes(searchTerm.toLowerCase()));
+    const searchLower = searchTerm.toLowerCase();
+    const matchesSearch = 
+      p.name.toLowerCase().includes(searchLower) || 
+      p.sku.toLowerCase().includes(searchLower) ||
+      p.authorOrBrand.toLowerCase().includes(searchLower) ||
+      (p.description?.toLowerCase().includes(searchLower));
     return matchesCategory && matchesSearch;
   });
 
@@ -304,7 +495,8 @@ const ProductCatalog = ({ products, loading, searchTerm, setSearchTerm }: { prod
                   exit={{ opacity: 0, scale: 0.9 }}
                   transition={{ duration: 0.3 }}
                   key={product.id}
-                  className="group relative bg-white rounded-3xl border border-slate-100 overflow-hidden hover:shadow-2xl transition-all hover:-translate-y-2"
+                  onClick={() => setSelectedProduct(product)}
+                  className="group relative bg-white rounded-3xl border border-slate-100 overflow-hidden hover:shadow-2xl transition-all hover:-translate-y-2 cursor-pointer"
                 >
                   <div className="relative aspect-square overflow-hidden bg-slate-50">
                     <img 
@@ -313,55 +505,65 @@ const ProductCatalog = ({ products, loading, searchTerm, setSearchTerm }: { prod
                       className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
                       referrerPolicy="no-referrer"
                     />
-                    {(product.tag || product.stock < 5) && (
-                      <div className="absolute top-4 left-4 flex flex-col gap-2">
-                        {product.tag && (
-                          <div className="bg-brand-orange text-white text-[10px] font-bold uppercase tracking-widest px-3 py-1 rounded-full shadow-lg">
-                            {product.tag}
-                          </div>
-                        )}
-                        {product.stock < 5 && product.stock > 0 && (
-                          <div className="bg-red-500 text-white text-[10px] font-bold uppercase tracking-widest px-3 py-1 rounded-full shadow-lg">
-                            ¡Últimos {product.stock}!
-                          </div>
-                        )}
-                        {product.stock === 0 && (
-                          <div className="bg-slate-800 text-white text-[10px] font-bold uppercase tracking-widest px-3 py-1 rounded-full shadow-lg">
-                            Sin Stock
-                          </div>
-                        )}
-                      </div>
-                    )}
+                    <div className="absolute top-4 left-4 flex flex-col gap-2">
+                      {product.featured && (
+                        <div className="bg-yellow-400 text-slate-900 text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full shadow-lg flex items-center gap-1 border border-yellow-500">
+                          <Star size={10} fill="currentColor" /> Novedad
+                        </div>
+                      )}
+                      {product.stock <= product.minStock && product.stock > 0 && (
+                        <div className="bg-orange-500 text-white text-[10px] font-bold uppercase tracking-widest px-3 py-1 rounded-full shadow-lg border border-orange-600">
+                          ¡Pocas unidades!
+                        </div>
+                      )}
+                      {product.stock === 0 && (
+                        <div className="bg-slate-800 text-white text-[10px] font-bold uppercase tracking-widest px-3 py-1 rounded-full shadow-lg">
+                          Agotado
+                        </div>
+                      )}
+                    </div>
                     <div className="absolute inset-x-0 bottom-0 p-6 translate-y-full group-hover:translate-y-0 transition-transform duration-300 bg-gradient-to-t from-black/80 via-black/40 to-transparent">
-                      <a 
-                        href={`https://wa.me/51953366458?text=Hola,%20me%20interesa%20el%20producto:%20${product.name}`}
-                        target="_blank"
-                        rel="noreferrer"
+                      <button 
                         className="w-full bg-brand-teal text-white py-4 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-brand-teal/90 shadow-xl"
                       >
-                        <ShoppingBag size={20} /> Solicitar Cotización
-                      </a>
+                        <ExternalLink size={20} /> Ver Detalles
+                      </button>
                     </div>
                   </div>
                   
                   <div className="p-6">
-                    <div className="flex justify-between items-start mb-2">
-                      <h3 className="font-bold text-lg text-slate-800 group-hover:text-brand-teal transition-colors leading-tight">
-                        {product.name}
-                      </h3>
-                      <span className="bg-teal-50 text-brand-teal px-2 py-1 rounded-lg text-[10px] font-bold uppercase">
+                    <div className="flex justify-between items-start mb-1">
+                      <div className="min-w-0">
+                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">{product.sku}</p>
+                        <h3 className="font-bold text-lg text-slate-800 group-hover:text-brand-teal transition-colors leading-tight truncate">
+                          {product.name}
+                        </h3>
+                        <p className="text-xs text-slate-500 mt-1">{product.authorOrBrand}</p>
+                      </div>
+                    </div>
+                    <div className="flex justify-between items-center mt-4 pt-4 border-t border-slate-50">
+                      <p className="text-brand-orange font-display font-bold text-xl">
+                        {product.price.toLocaleString('es-PE', { style: 'currency', currency: 'PEN' })}
+                      </p>
+                      <span className="bg-teal-50 text-brand-teal px-2 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider">
                         {product.category}
                       </span>
                     </div>
-                    <p className="text-brand-orange font-display font-bold text-xl">
-                      {product.price.toLocaleString('es-PE', { style: 'currency', currency: 'PEN' })}
-                    </p>
                   </div>
                 </motion.div>
               ))}
             </AnimatePresence>
           </div>
         )}
+
+        <AnimatePresence>
+          {selectedProduct && (
+            <ProductDetailModal 
+              product={selectedProduct} 
+              onClose={() => setSelectedProduct(null)} 
+            />
+          )}
+        </AnimatePresence>
         
         <div className="mt-16 text-center">
           <a 
@@ -427,40 +629,80 @@ const Benefits = () => {
 
 const LocalPresence = () => {
   return (
-    <section className="py-20 relative overflow-hidden bg-brand-teal text-white">
+    <section id="ubicacion" className="py-24 relative overflow-hidden bg-brand-teal text-white">
       <div className="absolute top-0 left-0 w-full h-full opacity-10">
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] border-[40px] border-white rounded-full"></div>
       </div>
       
-      <div className="max-w-7xl mx-auto px-6 text-center relative z-10">
-        <motion.div
-          initial={{ opacity: 0, scale: 0.9 }}
-          whileInView={{ opacity: 1, scale: 1 }}
-          viewport={{ once: true }}
-          className="mb-10 inline-flex flex-col items-center"
-        >
-          <div className="w-20 h-20 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center mb-6 border border-white/30">
-            <MapPin size={40} />
-          </div>
-          <h2 className="font-display text-4xl md:text-5xl font-bold mb-4">Impulsando la educación en Puquio</h2>
-          <p className="text-blue-100 text-lg max-w-3xl mx-auto">
-            Estamos ubicados en el corazón de Puquio, sirviendo a nuestra comunidad con dedicación y compromiso. Visítanos y descubre todo lo que tenemos para ti.
-          </p>
-        </motion.div>
-        
-        <div className="flex flex-col md:flex-row gap-6 justify-center mt-12">
-          <div className="bg-white/10 backdrop-blur-md p-6 rounded-2xl border border-white/20 text-left flex-1 max-w-sm">
-            <h4 className="font-bold text-xl mb-2 flex items-center gap-2">
-              <Navigation size={20} className="text-orange-300" /> Dirección
-            </h4>
-            <p className="text-blue-50">Jr. Tacna N° 668, Puquio, Ayacucho.</p>
-          </div>
-          <div className="bg-white/10 backdrop-blur-md p-6 rounded-2xl border border-white/20 text-left flex-1 max-w-sm">
-            <h4 className="font-bold text-xl mb-2 flex items-center gap-2">
-              <Share2 size={20} className="text-orange-300" /> Redes Locales
-            </h4>
-            <p className="text-blue-50">¡Únete a nuestra comunidad de más de 5,000 puquianos!</p>
-          </div>
+      <div className="max-w-7xl mx-auto px-6 relative z-10">
+        <div className="grid lg:grid-cols-2 gap-12 items-center">
+          <motion.div
+            initial={{ opacity: 0, x: -30 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true }}
+          >
+            <div className="w-16 h-16 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center mb-6 border border-white/30">
+              <MapPin size={32} />
+            </div>
+            <h2 className="font-display text-4xl md:text-5xl font-bold mb-6">Visítanos en el corazón de Puquio</h2>
+            <p className="text-blue-50 text-lg mb-10 leading-relaxed">
+              Estamos ubicados en una zona estratégica de Puquio para servir a toda la comunidad. Ven por tus libros, útiles de oficina o lo último en tecnología.
+            </p>
+
+            <div className="space-y-6">
+              <div className="bg-white/10 backdrop-blur-md p-6 rounded-2xl border border-white/20">
+                <h4 className="font-bold text-xl mb-2 flex items-center gap-3 text-yellow-300">
+                  <Navigation size={22} /> Nuestra Dirección
+                </h4>
+                <p className="text-white font-medium">Jr. Tacna N° 668, Puquio, Ayacucho.</p>
+                <a 
+                  href="https://www.google.com/maps/search/?api=1&query=-14.6935614,-74.1279769"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex items-center gap-2 mt-4 text-sm font-bold bg-white text-brand-teal px-4 py-2 rounded-lg hover:bg-slate-100 transition-colors"
+                >
+                  Abrir en Google Maps <ExternalLink size={14} />
+                </a>
+              </div>
+              
+              <div className="flex items-center gap-4 text-blue-50 text-sm">
+                <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center">
+                  <CheckCircle2 size={20} />
+                </div>
+                <span>Fácil acceso desde la plaza principal</span>
+              </div>
+            </div>
+          </motion.div>
+
+          {/* Google Maps Integration */}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            whileInView={{ opacity: 1, scale: 1 }}
+            viewport={{ once: true }}
+            className="relative"
+          >
+            <div className="bg-white p-3 rounded-[2.5rem] shadow-2xl overflow-hidden aspect-video lg:aspect-square relative group">
+              <iframe 
+                src="https://www.google.com/maps/embed?pb=!1m17!1m12!1m3!1d969.0305711681363!2d-74.1279769!3d-14.6935614!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m2!1m1!2zMTTCsDQxJzM2LjgiUyA3NMKwMDcnNDAuNyJX!5e0!3m2!1ses!2spe!4v1713802026123!5m2!1ses!2spe" 
+                className="w-full h-full rounded-[2rem] border-0"
+                allowFullScreen={true} 
+                loading="lazy" 
+                referrerPolicy="no-referrer-when-downgrade"
+              ></iframe>
+              <div className="absolute inset-0 bg-brand-teal/5 pointer-events-none group-hover:bg-transparent transition-colors"></div>
+            </div>
+            
+            {/* Location Badge */}
+            <div className="absolute -bottom-6 -left-6 bg-white p-4 rounded-2xl shadow-xl border border-slate-100 hidden md:flex items-center gap-3">
+              <div className="w-10 h-10 bg-brand-orange/20 rounded-full flex items-center justify-center text-brand-orange font-bold">
+                P
+              </div>
+              <div>
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Ubícanos</p>
+                <p className="font-bold text-slate-800 text-sm">Jr. Tacna 668</p>
+              </div>
+            </div>
+          </motion.div>
         </div>
       </div>
     </section>
@@ -524,6 +766,55 @@ const AIChatPlaceholder = () => {
   );
 };
 
+const InspirationalMarquee = () => {
+  const phrases = [
+    "La educación es el pasaporte hacia el futuro.",
+    "Un libro es un regalo que puedes abrir una y otra vez.",
+    "La tecnología es solo una herramienta, la educación es el poder.",
+    "El aprendizaje es un tesoro que seguirá a su dueño a todas partes.",
+    "Puquio crece con el conocimiento de su gente.",
+    "No dejes de aprender, porque la vida nunca deja de enseñar.",
+    "La lectura nos abre las puertas del mundo que te imaginas."
+  ];
+
+  return (
+    <div className="w-full bg-brand-teal overflow-hidden py-2 border-y border-brand-teal/20 shadow-sm">
+      <div className="flex whitespace-nowrap">
+        <motion.div
+          animate={{ x: [0, -1000] }}
+          transition={{
+            x: {
+              repeat: Infinity,
+              repeatType: "loop",
+              duration: 35,
+              ease: "linear",
+            },
+          }}
+          className="flex gap-16 items-center"
+        >
+          {phrases.map((phrase, i) => (
+            <div key={i} className="flex items-center gap-4">
+              <span className="text-white/50 text-[10px]">✨</span>
+              <span className="text-white text-[11px] font-bold tracking-wider uppercase opacity-90">
+                {phrase}
+              </span>
+            </div>
+          ))}
+          {/* Duplicate for seamless loop */}
+          {phrases.map((phrase, i) => (
+            <div key={`dup-${i}`} className="flex items-center gap-4">
+              <span className="text-white/50 text-[10px]">✨</span>
+              <span className="text-white text-[11px] font-bold tracking-wider uppercase opacity-90">
+                {phrase}
+              </span>
+            </div>
+          ))}
+        </motion.div>
+      </div>
+    </div>
+  );
+};
+
 const Footer = () => {
   return (
     <footer className="bg-slate-900 text-slate-400 py-12 border-t border-slate-800">
@@ -583,7 +874,7 @@ export default function App() {
   const { products, loading } = useProducts();
   const [user, setUser] = useState<FirebaseUser | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
-  const [showAdminPanel, setShowAdminPanel] = useState(false);
+  const [showManager, setShowManager] = useState(false);
   const [isAuthLoading, setIsAuthLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
 
@@ -591,15 +882,10 @@ export default function App() {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       setUser(firebaseUser);
       if (firebaseUser) {
-        // Check if user is admin
+        // Simple Admin Check
         const adminDoc = await getDoc(doc(db, 'admins', firebaseUser.uid));
-        
-        // Bootstrap the first admin if it's the owner email and doc doesn't exist
         if (!adminDoc.exists() && firebaseUser.email === "martinherickcahuanamendoza@gmail.com") {
-          await setDoc(doc(db, 'admins', firebaseUser.uid), {
-            email: firebaseUser.email,
-            role: 'admin'
-          });
+          await setDoc(doc(db, 'admins', firebaseUser.uid), { email: firebaseUser.email, role: 'owner' });
           setIsAdmin(true);
         } else {
           setIsAdmin(adminDoc.exists());
@@ -633,14 +919,17 @@ export default function App() {
     <div className="min-h-screen">
       <Navbar 
         user={user} 
-        isAdmin={isAdmin} 
+        isAdmin={isAdmin}
         onLogin={handleLogin} 
         onLogout={handleLogout}
-        onOpenAdmin={() => setShowAdminPanel(true)}
+        onOpenAdmin={() => setShowManager(true)}
         isLoading={isAuthLoading}
       />
+      <div className="pt-24"> {/* Offset for Fixed/Sticky Navbar if needed, though Navbar has fixed positioning */}
+        <InspirationalMarquee />
+      </div>
       <main>
-        <Hero onSearch={setSearchTerm} />
+        <Hero onSearch={setSearchTerm} products={products} />
         <ProductCatalog 
           products={products} 
           loading={loading} 
@@ -655,10 +944,10 @@ export default function App() {
       <AIChatPlaceholder />
 
       <AnimatePresence>
-        {showAdminPanel && isAdmin && (
-          <AdminPanel 
+        {showManager && isAdmin && (
+          <CatalogManager 
             products={products} 
-            onClose={() => setShowAdminPanel(false)} 
+            onClose={() => setShowManager(false)} 
           />
         )}
       </AnimatePresence>

@@ -4,13 +4,17 @@ import { db } from '../lib/firebase';
 
 export interface Product {
   id: string;
+  sku: string;         // Código de barras o SKU interno
   name: string;
-  description?: string;
-  price: number;
-  stock: number;
+  authorOrBrand: string; // Autor para libros, Marca para útiles
   category: string;
+  description?: string;
+  price: number;        // Precio de venta
+  costPrice: number;    // Precio de costo
+  stock: number;
+  minStock: number;     // Umbral para alertas
   imageUrl?: string;
-  tag?: string;
+  featured: boolean;    // Si es destacado o novedad
   createdAt?: any;
   updatedAt?: any;
 }

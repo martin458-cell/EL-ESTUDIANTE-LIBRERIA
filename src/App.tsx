@@ -100,38 +100,12 @@ const ProductDetailModal = ({ product, onClose }: { product: Product, onClose: (
             <div className="space-y-4 mb-8 pt-4 border-t border-slate-50">
               {product.description && (
                 <div>
-                  <h4 className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2">Descripción</h4>
+                  <h4 className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2">Descripción del Producto</h4>
                   <div className="text-sm sm:text-base text-slate-600 leading-relaxed max-h-48 overflow-y-auto pr-2 custom-scrollbar">
                     {product.description}
                   </div>
                 </div>
               )}
-
-              {/* Social Sharing Section */}
-              <div className="pt-2">
-                <h4 className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-3">Compartir en Redes</h4>
-                <div className="flex flex-wrap gap-2">
-                  <button 
-                    onClick={() => {
-                      const shareUrl = window.location.href;
-                      window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}`, '_blank');
-                    }}
-                    className="flex items-center gap-2 px-3 py-2 bg-[#1877F2] text-white rounded-xl text-xs font-bold hover:opacity-90 transition-opacity"
-                  >
-                    <Facebook size={14} /> Facebook
-                  </button>
-                  <button 
-                    onClick={() => {
-                      const postText = `📚 *${product.name}*\n\n💰 Precio: ${product.price.toLocaleString('es-PE', { style: 'currency', currency: 'PEN' })}\n📝 ${product.description}\n\n📍 Encuéntralo en Librería El Estudiante - Puquio\n📲 Pídelo aquí: https://wa.me/51953366458?text=Hola,%20busco%20el%20producto%20${encodeURIComponent(product.name)}`;
-                      navigator.clipboard.writeText(postText);
-                      alert('¡Información copiada! Ahora puedes pegarla en tu TikTok o Facebook.');
-                    }}
-                    className="flex items-center gap-2 px-3 py-2 bg-slate-800 text-white rounded-xl text-xs font-bold hover:bg-slate-700 transition-colors"
-                  >
-                    <Share2 size={14} /> Copiar para TikTok/Post
-                  </button>
-                </div>
-              </div>
               
               <div className="grid grid-cols-2 gap-4">
                 <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100">
@@ -162,7 +136,7 @@ const ProductDetailModal = ({ product, onClose }: { product: Product, onClose: (
                 rel="noreferrer"
                 className="flex-[2] bg-slate-900 text-white py-4 rounded-2xl font-bold flex items-center justify-center gap-3 hover:bg-slate-800 transition-all shadow-xl hover:-translate-y-1"
               >
-                <ShoppingBag size={20} /> Solicitar WhatsApp
+                <Smartphone size={20} /> Solicitar WhatsApp
               </a>
               <button 
                 onClick={onClose}

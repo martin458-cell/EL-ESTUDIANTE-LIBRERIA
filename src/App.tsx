@@ -106,6 +106,32 @@ const ProductDetailModal = ({ product, onClose }: { product: Product, onClose: (
                   </div>
                 </div>
               )}
+
+              {/* Social Sharing Section */}
+              <div className="pt-2">
+                <h4 className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-3">Compartir en Redes</h4>
+                <div className="flex flex-wrap gap-2">
+                  <button 
+                    onClick={() => {
+                      const shareUrl = window.location.href;
+                      window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}`, '_blank');
+                    }}
+                    className="flex items-center gap-2 px-3 py-2 bg-[#1877F2] text-white rounded-xl text-xs font-bold hover:opacity-90 transition-opacity"
+                  >
+                    <Facebook size={14} /> Facebook
+                  </button>
+                  <button 
+                    onClick={() => {
+                      const postText = `📚 *${product.name}*\n\n💰 Precio: ${product.price.toLocaleString('es-PE', { style: 'currency', currency: 'PEN' })}\n📝 ${product.description}\n\n📍 Encuéntralo en Librería El Estudiante - Puquio\n📲 Pídelo aquí: https://wa.me/51953366458?text=Hola,%20busco%20el%20producto%20${encodeURIComponent(product.name)}`;
+                      navigator.clipboard.writeText(postText);
+                      alert('¡Información copiada! Ahora puedes pegarla en tu TikTok o Facebook.');
+                    }}
+                    className="flex items-center gap-2 px-3 py-2 bg-slate-800 text-white rounded-xl text-xs font-bold hover:bg-slate-700 transition-colors"
+                  >
+                    <Share2 size={14} /> Copiar para TikTok/Post
+                  </button>
+                </div>
+              </div>
               
               <div className="grid grid-cols-2 gap-4">
                 <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100">
@@ -1029,9 +1055,9 @@ const LocalPresence = () => {
 
 const SocialShare = () => {
   const shareLinks = [
-    { name: "Facebook", icon: <Facebook />, color: "bg-[#1877F2]", url: "#" },
+    { name: "Facebook", icon: <Facebook />, color: "bg-[#1877F2]", url: "https://www.facebook.com/profile.php?id=100083164039067" },
     { name: "WhatsApp", icon: <Smartphone />, color: "bg-[#25D366]", url: "https://wa.me/51953366458" },
-    { name: "TikTok", icon: <Share2 />, color: "bg-black", url: "#" }
+    { name: "TikTok", icon: <Share2 />, color: "bg-black", url: "https://www.tiktok.com/@puquio_el_estudiante" }
   ];
 
   return (
@@ -1160,10 +1186,13 @@ const Footer = ({ onNavigate, activeView }: {
             Desde 1995 sirviendo a la comunidad de Puquio con los mejores productos educativos y tecnológicos. Comprometidos con el desarrollo de Ayacucho.
           </p>
           <div className="flex gap-4">
-            <a href="https://www.facebook.com" target="_blank" rel="noreferrer" className="w-10 h-10 rounded-full border border-slate-700 flex items-center justify-center hover:bg-white/10 transition-colors">
+            <a href="https://www.facebook.com/profile.php?id=100083164039067" target="_blank" rel="noreferrer" className="w-10 h-10 rounded-full border border-slate-700 flex items-center justify-center hover:bg-white/10 transition-colors" title="Facebook">
               <Facebook size={18} />
             </a>
-            <a href="https://wa.me/51953366458" target="_blank" rel="noreferrer" className="w-10 h-10 rounded-full border border-slate-700 flex items-center justify-center hover:bg-white/10 transition-colors">
+            <a href="https://www.tiktok.com/@puquio_el_estudiante" target="_blank" rel="noreferrer" className="w-10 h-10 rounded-full border border-slate-700 flex items-center justify-center hover:bg-white/10 transition-colors" title="TikTok">
+              <Share2 size={18} />
+            </a>
+            <a href="https://wa.me/51953366458" target="_blank" rel="noreferrer" className="w-10 h-10 rounded-full border border-slate-700 flex items-center justify-center hover:bg-white/10 transition-colors" title="WhatsApp">
               <Smartphone size={18} />
             </a>
           </div>

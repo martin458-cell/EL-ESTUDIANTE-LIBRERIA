@@ -15,6 +15,8 @@ export interface Product {
   minStock: number;     // Umbral para alertas
   imageUrl?: string;
   featured: boolean;    // Si es destacado o novedad
+  isOffer?: boolean;    // Si está en oferta/remate
+  offerPrice?: number;  // Precio en oferta
   createdAt?: any;
   updatedAt?: any;
 }

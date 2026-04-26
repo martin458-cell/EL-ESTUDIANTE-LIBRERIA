@@ -247,6 +247,35 @@ export const CatalogManager: React.FC<CatalogManagerProps> = ({ products, onClos
                     </select>
                   </div>
 
+                  <div className="bg-teal-50/50 p-4 rounded-xl border border-teal-100 space-y-3">
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input 
+                        type="checkbox"
+                        className="w-4 h-4 rounded text-brand-teal focus:ring-brand-teal"
+                        checked={editingProduct.isOffer || false}
+                        onChange={e => setEditingProduct({...editingProduct, isOffer: e.target.checked})}
+                      />
+                      <span className="text-xs font-bold text-slate-700 uppercase tracking-wide">Poner en Oferta / Remate</span>
+                    </label>
+                    
+                    {editingProduct.isOffer && (
+                      <motion.div 
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: 'auto', opacity: 1 }}
+                        className="overflow-hidden"
+                      >
+                        <label className="text-[10px] font-black uppercase text-brand-teal mb-1 block">Precio de Oferta S/</label>
+                        <input 
+                          type="number"
+                          className="w-full bg-white border border-teal-200 rounded-lg px-3 py-2 text-sm focus:border-brand-teal outline-none"
+                          value={editingProduct.offerPrice || ''}
+                          onChange={e => setEditingProduct({...editingProduct, offerPrice: Number(e.target.value)})}
+                          placeholder="0.00"
+                        />
+                      </motion.div>
+                    )}
+                  </div>
+
                   <button 
                     disabled={isSaving}
                     type="submit" 

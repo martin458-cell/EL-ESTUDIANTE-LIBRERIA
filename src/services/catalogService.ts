@@ -18,6 +18,7 @@ export const CatalogService = {
       ...data,
       price: Number(data.price || 0),
       stock: Number(data.stock || 0),
+      offerPrice: data.isOffer ? Number(data.offerPrice || 0) : null,
       updatedAt: serverTimestamp()
     };
 

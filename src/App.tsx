@@ -140,13 +140,15 @@ const ProductDetailModal = ({ product, onClose }: { product: Product, onClose: (
   );
 };
 
-const Navbar = ({ user, isAdmin, onLogin, onLogout, onOpenAdmin, isLoading }: { 
+const Navbar = ({ user, isAdmin, onLogin, onLogout, onOpenAdmin, isLoading, activeView, onNavigate }: { 
   user: FirebaseUser | null, 
   isAdmin: boolean,
   onLogin: () => void, 
   onLogout: () => void,
   onOpenAdmin: () => void,
-  isLoading: boolean
+  isLoading: boolean,
+  activeView: string,
+  onNavigate: (view: 'home' | 'offers', sectionId?: string) => void
 }) => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
@@ -157,10 +159,20 @@ const Navbar = ({ user, isAdmin, onLogin, onLogout, onOpenAdmin, isLoading }: {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
+  const handleSectionClick = (e: React.MouseEvent, sectionId: string) => {
+    if (activeView !== 'home') {
+      e.preventDefault();
+      onNavigate('home', sectionId);
+    }
+  };
+
   return (
     <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${isScrolled ? 'bg-white/80 backdrop-blur-md shadow-sm py-3' : 'bg-transparent py-5'}`}>
       <div className="max-w-7xl mx-auto px-6 flex justify-between items-center">
-        <div className="flex items-center gap-3">
+        <div 
+          className="flex items-center gap-3 cursor-pointer" 
+          onClick={() => { onNavigate('home'); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+        >
           <img 
             src="/logo.svg" 
             alt="Logo El Estudiante" 
@@ -170,9 +182,39 @@ const Navbar = ({ user, isAdmin, onLogin, onLogout, onOpenAdmin, isLoading }: {
         </div>
         
         <div className="hidden md:flex items-center gap-8 font-medium text-sm text-slate-600">
-          <a href="#catalogo" className="hover:text-brand-teal transition-colors">Catálogo</a>
-          <a href="#beneficios" className="hover:text-brand-teal transition-colors">Beneficios</a>
-          <a href="#ubicacion" className="hover:text-brand-teal transition-colors">Ubicación</a>
+          <button 
+            onClick={() => onNavigate('home')}
+            className={`${activeView === 'home' ? 'text-brand-teal font-bold' : 'hover:text-brand-teal'} transition-colors`}
+          >
+            Inicio
+          </button>
+          <a 
+            href="#catalogo" 
+            onClick={(e) => handleSectionClick(e, 'catalogo')}
+            className="hover:text-brand-teal transition-colors"
+          >
+            Catálogo
+          </a>
+          <button 
+            onClick={() => onNavigate('offers')}
+            className={`flex items-center gap-1 ${activeView === 'offers' ? 'text-brand-orange font-bold' : 'hover:text-brand-orange'} transition-colors`}
+          >
+            Ofertas <span className="text-[10px] bg-brand-orange text-white px-1.5 py-0.5 rounded-full animate-bounce">TOP</span>
+          </button>
+          <a 
+            href="#beneficios" 
+            onClick={(e) => handleSectionClick(e, 'beneficios')}
+            className="hover:text-brand-teal transition-colors"
+          >
+            Beneficios
+          </a>
+          <a 
+            href="#ubicacion" 
+            onClick={(e) => handleSectionClick(e, 'ubicacion')}
+            className="hover:text-brand-teal transition-colors"
+          >
+            Ubicación
+          </a>
         </div>
 
         <div className="flex items-center gap-4">
@@ -683,6 +725,160 @@ const Benefits = () => {
   );
 };
 
+const StaticMap = () => {
+  return (
+    <div className="aspect-video w-full rounded-2xl overflow-hidden shadow-lg border border-slate-200 bg-slate-100 relative group">
+      <img 
+        src="https://maps.googleapis.com/maps/api/staticmap?center=-14.6935614,-74.1279769&zoom=17&size=800x450&markers=color:red%7C-14.6935614,-74.1279769&key=YOUR_API_KEY_HERE" 
+        alt="Mapa de Ubicación Puquio" 
+        className="w-full h-full object-cover"
+      />
+      <div className="absolute inset-0 bg-slate-900/10 group-hover:bg-transparent transition-colors"></div>
+      <a 
+        href="https://www.google.com/maps/search/?api=1&query=-14.6935614,-74.1279769" 
+        target="_blank" 
+        rel="noreferrer"
+        className="absolute bottom-4 right-4 bg-white text-slate-900 px-4 py-2 rounded-xl text-xs font-bold shadow-xl flex items-center gap-2 hover:bg-brand-teal hover:text-white transition-all transform hover:scale-105"
+      >
+        <Navigation size={14} /> Abrir en Google Maps
+      </a>
+    </div>
+  );
+};
+
+const OffersPreview = ({ products, onSeeMore }: { products: Product[], onSeeMore: () => void }) => {
+  const offerProducts = products.filter(p => p.isOffer).slice(0, 4);
+
+  if (offerProducts.length === 0) return null;
+
+  return (
+    <section className="py-16 bg-brand-orange/5 border-y border-brand-orange/10 overflow-hidden">
+      <div className="max-w-7xl mx-auto px-6">
+        <div className="flex justify-between items-end mb-10">
+          <div>
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-brand-orange text-white text-[10px] font-black uppercase tracking-widest mb-4 animate-pulse">
+              🚀 Ofertas Relámpago
+            </div>
+            <h2 className="text-3xl font-display font-bold text-slate-900">Remates que no puedes dejar pasar</h2>
+          </div>
+          <button 
+            onClick={onSeeMore}
+            className="hidden sm:flex items-center gap-2 text-brand-orange font-bold hover:underline group"
+          >
+            Ver todas las ofertas <ChevronRight size={20} className="group-hover:translate-x-1 transition-transform" />
+          </button>
+        </div>
+
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+          {offerProducts.map((p) => (
+            <motion.div 
+              key={p.id}
+              whileHover={{ y: -5 }}
+              className="bg-white p-4 rounded-3xl shadow-lg border border-brand-orange/10 relative overflow-hidden group"
+            >
+              <div className="aspect-square rounded-2xl overflow-hidden bg-slate-50 mb-4 relative">
+                <img src={p.imageUrl} alt={p.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
+                <div className="absolute top-2 right-2 bg-brand-orange text-white text-[9px] font-black px-2 py-1 rounded-lg">
+                  -{Math.round((1 - (p.offerPrice || 0) / p.price) * 100)}%
+                </div>
+              </div>
+              <h4 className="font-bold text-slate-800 text-sm truncate mb-1">{p.name}</h4>
+              <div className="flex items-center gap-2">
+                <span className="text-brand-orange font-black text-lg">S/ {p.offerPrice}</span>
+                <span className="text-slate-400 text-xs line-through italic text-[10px]">S/ {p.price}</span>
+              </div>
+            </motion.div>
+          ))}
+        </div>
+        
+        <div className="mt-10 text-center sm:hidden">
+          <button 
+            onClick={onSeeMore}
+            className="w-full bg-brand-orange text-white py-4 rounded-2xl font-bold flex items-center justify-center gap-2 shadow-xl shadow-brand-orange/20"
+          >
+            Ver más ofertas <ChevronRight size={20} />
+          </button>
+        </div>
+      </div>
+    </section>
+  );
+};
+
+const OffersPage = ({ products }: { products: Product[] }) => {
+  const offerProducts = products.filter(p => p.isOffer);
+
+  return (
+    <div className="min-h-screen pt-32 pb-24 bg-bg-warm">
+      <div className="max-w-7xl mx-auto px-6">
+        <div className="text-center mb-16">
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-brand-orange text-white text-xs font-black uppercase tracking-widest mb-6 shadow-lg shadow-brand-orange/30">
+            🏷️ Catálogo de Remates
+          </div>
+          <h1 className="text-5xl md:text-6xl font-display font-bold text-slate-900 mb-6">
+            Oportunidades <span className="text-brand-orange">Especiales</span>
+          </h1>
+          <p className="text-lg text-slate-600 max-w-2xl mx-auto leading-relaxed">
+            Hemos seleccionado estos productos con descuentos exclusivos para nuestra comunidad de Puquio. Tecnología, libros y útiles a precios de regalo.
+          </p>
+        </div>
+
+        {offerProducts.length === 0 ? (
+          <div className="text-center py-24 bg-white rounded-[3rem] shadow-xl border border-dashed border-slate-200">
+            <ShoppingBag className="mx-auto text-slate-300 mb-6" size={64} />
+            <h3 className="text-2xl font-bold text-slate-800 mb-2">Próximamente más ofertas</h3>
+            <p className="text-slate-500">Estamos preparando nuevos remates para ti. ¡Vuelve pronto!</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+            {offerProducts.map((p) => (
+              <motion.div 
+                key={p.id}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="bg-white rounded-3xl shadow-xl overflow-hidden border border-brand-orange/20 relative group"
+              >
+                <div className="aspect-square relative overflow-hidden">
+                  <img src={p.imageUrl} alt={p.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
+                  <div className="absolute top-4 right-4 bg-brand-orange text-white px-3 py-1.5 rounded-xl text-xs font-black shadow-lg">
+                    AHORRA S/ {(p.price - (p.offerPrice || 0)).toFixed(2)}
+                  </div>
+                  <div className="absolute bottom-4 left-4">
+                    <span className="bg-white/90 backdrop-blur-md text-brand-orange px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border border-brand-orange/20">
+                      {p.category}
+                    </span>
+                  </div>
+                </div>
+                <div className="p-6">
+                  <h3 className="font-bold text-slate-900 mb-2 truncate group-hover:text-brand-orange transition-colors">{p.name}</h3>
+                  <p className="text-xs text-slate-500 mb-4">{p.authorOrBrand}</p>
+                  <div className="flex items-center justify-between mb-6">
+                    <div>
+                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Ahora solo</p>
+                      <p className="text-3xl font-display font-bold text-brand-orange">S/ {p.offerPrice}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Antes</p>
+                      <p className="text-sm text-slate-400 line-through">S/ {p.price}</p>
+                    </div>
+                  </div>
+                  <a 
+                    href={`https://wa.me/51953366458?text=Hola,%20deseo%20aprovechar%20la%20oferta%20en:%20${p.name}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="w-full bg-slate-900 text-white py-4 rounded-2xl font-bold flex items-center justify-center gap-2 hover:bg-brand-orange transition-all hover:scale-[1.02]"
+                  >
+                    Lo quiero ya! <ChevronRight size={18} />
+                  </a>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
 const LocalPresence = () => {
   return (
     <section id="ubicacion" className="py-24 relative overflow-hidden bg-brand-teal text-white">
@@ -871,7 +1067,17 @@ const InspirationalMarquee = () => {
   );
 };
 
-const Footer = () => {
+const Footer = ({ onNavigate, activeView }: { 
+  onNavigate: (view: 'home' | 'offers', sectionId?: string) => void,
+  activeView: string
+}) => {
+  const handleSectionClick = (e: React.MouseEvent, sectionId: string) => {
+    if (activeView !== 'home') {
+      e.preventDefault();
+      onNavigate('home', sectionId);
+    }
+  };
+
   return (
     <footer className="bg-slate-900 text-slate-400 py-12 border-t border-slate-800">
       <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 md:grid-cols-4 gap-12">
@@ -888,10 +1094,10 @@ const Footer = () => {
             Desde 1995 sirviendo a la comunidad de Puquio con los mejores productos educativos y tecnológicos. Comprometidos con el desarrollo de Ayacucho.
           </p>
           <div className="flex gap-4">
-            <a href="#" className="w-10 h-10 rounded-full border border-slate-700 flex items-center justify-center hover:bg-white/10 transition-colors">
+            <a href="https://www.facebook.com" target="_blank" rel="noreferrer" className="w-10 h-10 rounded-full border border-slate-700 flex items-center justify-center hover:bg-white/10 transition-colors">
               <Facebook size={18} />
             </a>
-            <a href="https://wa.me/51953366458" className="w-10 h-10 rounded-full border border-slate-700 flex items-center justify-center hover:bg-white/10 transition-colors">
+            <a href="https://wa.me/51953366458" target="_blank" rel="noreferrer" className="w-10 h-10 rounded-full border border-slate-700 flex items-center justify-center hover:bg-white/10 transition-colors">
               <Smartphone size={18} />
             </a>
           </div>
@@ -900,10 +1106,49 @@ const Footer = () => {
         <div>
           <h4 className="font-bold text-white mb-6 uppercase text-xs tracking-widest">Secciones</h4>
           <ul className="space-y-4 text-sm">
-            <li><a href="#catalogo" className="hover:text-white transition-colors">Catálogo</a></li>
-            <li><a href="#beneficios" className="hover:text-white transition-colors">Beneficios</a></li>
-            <li><a href="#ubicacion" className="hover:text-white transition-colors">Ubicación</a></li>
-            <li><a href="#" className="hover:text-white transition-colors">Inicio</a></li>
+            <li>
+              <a 
+                href="#catalogo" 
+                onClick={(e) => handleSectionClick(e, 'catalogo')}
+                className="hover:text-white transition-colors"
+              >
+                Catálogo
+              </a>
+            </li>
+            <li>
+              <button 
+                onClick={() => onNavigate('offers')} 
+                className="hover:text-white transition-colors"
+              >
+                Ofertas Especiales
+              </button>
+            </li>
+            <li>
+              <a 
+                href="#beneficios" 
+                onClick={(e) => handleSectionClick(e, 'beneficios')}
+                className="hover:text-white transition-colors"
+              >
+                Beneficios
+              </a>
+            </li>
+            <li>
+              <a 
+                href="#ubicacion" 
+                onClick={(e) => handleSectionClick(e, 'ubicacion')}
+                className="hover:text-white transition-colors"
+              >
+                Ubicación
+              </a>
+            </li>
+            <li>
+              <button 
+                onClick={() => onNavigate('home')} 
+                className="hover:text-white transition-colors"
+              >
+                Inicio
+              </button>
+            </li>
           </ul>
         </div>
         
@@ -933,6 +1178,7 @@ export default function App() {
   const [showManager, setShowManager] = useState(false);
   const [isAuthLoading, setIsAuthLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [activeView, setActiveView] = useState<'home' | 'offers'>('home');
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
@@ -971,6 +1217,20 @@ export default function App() {
     }
   };
 
+  const handleNavigate = (view: 'home' | 'offers', sectionId?: string) => {
+    setActiveView(view);
+    if (sectionId) {
+      setTimeout(() => {
+        const element = document.getElementById(sectionId);
+        if (element) {
+          element.scrollIntoView({ behavior: 'smooth' });
+        }
+      }, 300); // Increased timeout to ensure AnimatePresence finish
+    } else {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
+
   return (
     <div className="min-h-screen">
       <Navbar 
@@ -980,23 +1240,48 @@ export default function App() {
         onLogout={handleLogout}
         onOpenAdmin={() => setShowManager(true)}
         isLoading={isAuthLoading}
+        activeView={activeView}
+        onNavigate={handleNavigate}
       />
       <div className="pt-24"> {/* Offset for Fixed/Sticky Navbar if needed, though Navbar has fixed positioning */}
         <InspirationalMarquee />
       </div>
-      <main>
-        <Hero onSearch={setSearchTerm} products={products} />
-        <ProductCatalog 
-          products={products} 
-          loading={loading} 
-          searchTerm={searchTerm} 
-          setSearchTerm={setSearchTerm} 
-        />
-        <Benefits />
-        <LocalPresence />
-        <SocialShare />
-      </main>
-      <Footer />
+      
+      <AnimatePresence mode="wait">
+        {activeView === 'home' ? (
+          <motion.main
+            key="home"
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: 20 }}
+            transition={{ duration: 0.3 }}
+          >
+            <Hero onSearch={setSearchTerm} products={products} />
+            <OffersPreview products={products} onSeeMore={() => handleNavigate('offers')} />
+            <ProductCatalog 
+              products={products} 
+              loading={loading} 
+              searchTerm={searchTerm} 
+              setSearchTerm={setSearchTerm} 
+            />
+            <Benefits />
+            <LocalPresence />
+            <SocialShare />
+          </motion.main>
+        ) : (
+          <motion.div
+            key="offers"
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -20 }}
+            transition={{ duration: 0.3 }}
+          >
+            <OffersPage products={products} />
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <Footer onNavigate={handleNavigate} activeView={activeView} />
       <AIChatPlaceholder />
 
       <AnimatePresence>

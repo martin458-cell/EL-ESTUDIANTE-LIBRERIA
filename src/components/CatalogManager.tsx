@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { Plus, Edit2, Trash2, X, Save, Search, Package, Check, FileDown, UploadCloud } from 'lucide-react';
+import { Plus, Edit2, Trash2, X, Save, Search, Package, Check, FileDown, UploadCloud, Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Product } from '../hooks/useProducts';
 import { CatalogService } from '../services/catalogService';
@@ -19,8 +19,8 @@ export const CatalogManager: React.FC<CatalogManagerProps> = ({ products, onClos
   const categories = ['libros', 'utiles', 'tecnologia'];
 
   const filtered = products.filter(p => 
-    p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    p.sku.toLowerCase().includes(searchTerm.toLowerCase())
+    (p.name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (p.sku || '').toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const handleExcelImport = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -158,7 +158,7 @@ export const CatalogManager: React.FC<CatalogManagerProps> = ({ products, onClos
                 <div key={p.id} className="group flex items-center justify-between p-3 rounded-2xl border border-slate-50 hover:border-brand-teal/20 hover:bg-teal-50/20 transition-all">
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-lg bg-slate-100 overflow-hidden">
-                      {p.imageUrl ? <img src={p.imageUrl} alt="" className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center text-slate-300"><Search size={14} /></div>}
+                      {p.imageUrl ? <img src={p.imageUrl} alt="" className="w-full h-full object-cover" referrerPolicy="no-referrer" /> : <div className="w-full h-full flex items-center justify-center text-slate-300"><Search size={14} /></div>}
                     </div>
                     <div>
                       <h4 className="text-sm font-bold text-slate-800 leading-tight">{p.name}</h4>
@@ -281,7 +281,7 @@ export const CatalogManager: React.FC<CatalogManagerProps> = ({ products, onClos
                     type="submit" 
                     className="w-full bg-slate-900 text-white py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2 hover:bg-slate-800 transition-all disabled:opacity-50"
                   >
-                    {isSaving ? <X className="animate-spin" size={16} /> : <Save size={16} />}
+                    {isSaving ? <Loader2 className="animate-spin" size={16} /> : <Save size={16} />}
                     {editingProduct.id ? 'Actualizar' : 'Guardar'}
                   </button>
                 </form>

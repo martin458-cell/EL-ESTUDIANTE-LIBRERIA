@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { 
   BookOpen, 
   PenTool, 
@@ -27,6 +27,7 @@ import {
   Search,
   Star,
   X,
+  Menu,
   ChevronLeft,
   Calendar
 } from 'lucide-react';
@@ -47,25 +48,26 @@ const ProductDetailModal = ({ product, onClose }: { product: Product, onClose: (
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md"
+      className="fixed inset-0 z-[100] flex items-center justify-center p-2 sm:p-4 bg-slate-900/60 backdrop-blur-md"
       onClick={onClose}
     >
       <motion.div 
         initial={{ scale: 0.9, y: 20, opacity: 0 }}
         animate={{ scale: 1, y: 0, opacity: 1 }}
         exit={{ scale: 0.9, y: 20, opacity: 0 }}
-        className="bg-white w-full max-w-4xl rounded-[2.5rem] shadow-2xl overflow-hidden flex flex-col md:flex-row relative"
+        className="bg-white w-full max-w-4xl rounded-[2rem] sm:rounded-[2.5rem] shadow-2xl overflow-hidden flex flex-col md:flex-row relative max-h-[92vh] sm:max-h-[85vh] md:max-h-none overflow-y-auto md:overflow-visible"
         onClick={(e) => e.stopPropagation()}
       >
         <button 
           onClick={onClose}
-          className="absolute top-6 right-6 z-10 p-2 bg-white/80 backdrop-blur-md hover:bg-white rounded-full text-slate-500 shadow-sm transition-all"
+          className="absolute top-4 right-4 sm:top-6 sm:right-6 z-30 p-2.5 bg-white shadow-xl rounded-full text-slate-800 border border-slate-100 hover:bg-slate-50 transition-all active:scale-90"
+          aria-label="Cerrar"
         >
           <X size={20} />
         </button>
 
         {/* Image Preview */}
-        <div className="md:w-1/2 bg-slate-50 aspect-square md:aspect-auto relative overflow-hidden">
+        <div className="md:w-1/2 bg-slate-50 aspect-square md:aspect-auto relative overflow-hidden shrink-0">
           <img 
             src={product.imageUrl || `https://picsum.photos/seed/${product.id}/600/600`} 
             alt={product.name} 
@@ -73,66 +75,76 @@ const ProductDetailModal = ({ product, onClose }: { product: Product, onClose: (
             referrerPolicy="no-referrer"
           />
           {product.featured && (
-            <div className="absolute top-6 left-6 bg-yellow-400 text-slate-900 text-[10px] font-black uppercase tracking-widest px-4 py-1.5 rounded-full shadow-lg flex items-center gap-2 border border-yellow-500">
-              <Star size={12} fill="currentColor" /> Novedad
+            <div className="absolute top-4 left-4 sm:top-6 sm:left-6 bg-yellow-400 text-slate-900 text-[9px] sm:text-[10px] font-black uppercase tracking-widest px-3 sm:px-4 py-1.5 rounded-full shadow-lg flex items-center gap-2 border border-yellow-500">
+              <Star size={10} fill="currentColor" /> Novedad
             </div>
           )}
         </div>
 
         {/* Content */}
-        <div className="md:w-1/2 p-8 md:p-12 flex flex-col justify-between bg-white">
-          <div>
+        <div className="md:w-1/2 p-6 sm:p-8 md:p-12 flex flex-col bg-white min-h-0 overflow-y-auto">
+          <div className="flex-1">
             <div className="mb-6">
-              <span className="inline-block px-3 py-1 rounded-full bg-teal-50 text-brand-teal text-[10px] font-black uppercase tracking-widest border border-teal-100 mb-4">
+              <span className="inline-block px-3 py-1 rounded-full bg-teal-50 text-brand-teal text-[9px] sm:text-[10px] font-black uppercase tracking-widest border border-teal-100 mb-2">
                 {product.category}
               </span>
-              <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">SKU: {product.sku}</p>
-              <h2 className="text-3xl md:text-4xl font-display font-bold text-slate-900 leading-tight mb-2">
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">SKU: {product.sku}</p>
+              <h2 className="text-2xl sm:text-3xl font-display font-bold text-slate-900 leading-tight mb-2">
                 {product.name}
               </h2>
               {product.authorOrBrand && (
-                <p className="text-lg text-slate-500 font-medium">Por: <span className="text-slate-800">{product.authorOrBrand}</span></p>
+                <p className="text-base text-slate-500 font-medium">Por: <span className="text-slate-800 font-bold">{product.authorOrBrand}</span></p>
               )}
             </div>
 
-            <div className="space-y-6 mb-8 pt-6 border-t border-slate-50">
+            <div className="space-y-4 mb-8 pt-4 border-t border-slate-50">
               {product.description && (
                 <div>
-                  <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Descripción</h4>
-                  <p className="text-slate-600 leading-relaxed">{product.description}</p>
+                  <h4 className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2">Descripción</h4>
+                  <div className="text-sm sm:text-base text-slate-600 leading-relaxed max-h-48 overflow-y-auto pr-2 custom-scrollbar">
+                    {product.description}
+                  </div>
                 </div>
               )}
               
-              <div className="flex gap-8">
-                <div>
-                  <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Disponibilidad</h4>
-                  <p className={`font-bold ${product.stock > 0 ? 'text-green-600' : 'text-red-500'}`}>
-                    {product.stock > 0 ? `Stock: ${product.stock} unidades` : 'Agotado'}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                  <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">Disponibilidad</p>
+                  <p className={`font-bold text-xs sm:text-sm ${product.stock > 0 ? 'text-green-600' : 'text-red-500'}`}>
+                    {product.stock > 0 ? `${product.stock} unidades` : 'Agotado'}
                   </p>
                 </div>
                 <div>
-                  <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Estado</h4>
-                  <p className="font-bold text-slate-700">Producto Original</p>
+                  <h4 className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">Estado</h4>
+                  <p className="text-xs sm:text-sm font-bold text-slate-700">Producto Original</p>
                 </div>
               </div>
             </div>
           </div>
 
-          <div className="pt-6 border-t border-slate-50 flex flex-col sm:flex-row items-center gap-6">
+          <div className="mt-auto pt-6 border-t border-slate-50 flex flex-col sm:flex-row items-center gap-4 sm:gap-6">
             <div className="text-left w-full sm:w-auto">
-              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Precio Sugerido</p>
-              <p className="text-3xl md:text-4xl font-display font-bold text-brand-orange">
+              <p className="text-[9px] sm:text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Precio Sugerido</p>
+              <p className="text-2xl sm:text-3xl font-display font-bold text-brand-orange">
                 {product.price.toLocaleString('es-PE', { style: 'currency', currency: 'PEN' })}
               </p>
             </div>
-            <a 
-              href={`https://wa.me/51953366458?text=Hola,%20me%20interesa%20el%20producto:%20${product.name}%20(SKU:%20${product.sku})`}
-              target="_blank"
-              rel="noreferrer"
-              className="flex-1 w-full bg-slate-900 text-white py-5 rounded-2xl font-bold flex items-center justify-center gap-3 hover:bg-slate-800 transition-all shadow-xl hover:-translate-y-1"
-            >
-              <ShoppingBag size={20} /> Solicitar por WhatsApp
-            </a>
+            <div className="flex flex-col sm:flex-row gap-3 w-full sm:flex-1">
+              <a 
+                href={`https://wa.me/51953366458?text=Hola,%20me%20interesa%20el%20producto:%20${product.name}%20(SKU:%20${product.sku})`}
+                target="_blank"
+                rel="noreferrer"
+                className="flex-[2] bg-slate-900 text-white py-4 rounded-2xl font-bold flex items-center justify-center gap-3 hover:bg-slate-800 transition-all shadow-xl hover:-translate-y-1"
+              >
+                <ShoppingBag size={20} /> Solicitar WhatsApp
+              </a>
+              <button 
+                onClick={onClose}
+                className="flex-1 bg-slate-100 text-slate-600 py-4 rounded-2xl font-bold text-sm hover:bg-slate-200 transition-all sm:hidden"
+              >
+                Cerrar
+              </button>
+            </div>
           </div>
         </div>
       </motion.div>
@@ -152,6 +164,7 @@ const Navbar = ({ user, isAdmin, onLogin, onLogout, onOpenAdmin, isLoading, acti
 }) => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   useEffect(() => {
     const handleScroll = () => setIsScrolled(window.scrollY > 20);
@@ -164,98 +177,104 @@ const Navbar = ({ user, isAdmin, onLogin, onLogout, onOpenAdmin, isLoading, acti
       e.preventDefault();
       onNavigate('home', sectionId);
     }
+    setIsMobileMenuOpen(false);
   };
 
-  return (
-    <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${isScrolled ? 'bg-white/80 backdrop-blur-md shadow-sm py-3' : 'bg-transparent py-5'}`}>
-      <div className="max-w-7xl mx-auto px-6 flex justify-between items-center">
-        <div 
-          className="flex items-center gap-3 cursor-pointer" 
-          onClick={() => { onNavigate('home'); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
-        >
-          <img 
-            src="/logo.svg" 
-            alt="Logo El Estudiante" 
-            className="w-12 h-12 object-contain"
-          />
-          <span className="font-display font-bold text-xl tracking-tight">Librería "El Estudiante"</span>
-        </div>
-        
-        <div className="hidden md:flex items-center gap-8 font-medium text-sm text-slate-600">
-          <button 
-            onClick={() => onNavigate('home')}
-            className={`${activeView === 'home' ? 'text-brand-teal font-bold' : 'hover:text-brand-teal'} transition-colors`}
-          >
-            Inicio
-          </button>
-          <a 
-            href="#catalogo" 
-            onClick={(e) => handleSectionClick(e, 'catalogo')}
-            className="hover:text-brand-teal transition-colors"
-          >
-            Catálogo
-          </a>
-          <button 
-            onClick={() => onNavigate('offers')}
-            className={`flex items-center gap-1 ${activeView === 'offers' ? 'text-brand-orange font-bold' : 'hover:text-brand-orange'} transition-colors`}
-          >
-            Ofertas <span className="text-[10px] bg-brand-orange text-white px-1.5 py-0.5 rounded-full animate-bounce">TOP</span>
-          </button>
-          <a 
-            href="#beneficios" 
-            onClick={(e) => handleSectionClick(e, 'beneficios')}
-            className="hover:text-brand-teal transition-colors"
-          >
-            Beneficios
-          </a>
-          <a 
-            href="#ubicacion" 
-            onClick={(e) => handleSectionClick(e, 'ubicacion')}
-            className="hover:text-brand-teal transition-colors"
-          >
-            Ubicación
-          </a>
-        </div>
+  const navLinks = [
+    { label: 'Inicio', view: 'home' as const },
+    { label: 'Catálogo', href: '#catalogo', sectionId: 'catalogo' },
+    { label: 'Ofertas', view: 'offers' as const, isOffer: true },
+    { label: 'Beneficios', href: '#beneficios', sectionId: 'beneficios' },
+    { label: 'Ubicación', href: '#ubicacion', sectionId: 'ubicacion' },
+  ];
 
-        <div className="flex items-center gap-4">
-          <div className="relative">
+  return (
+    <>
+      <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${isScrolled || isMobileMenuOpen ? 'bg-white shadow-sm py-3' : 'bg-transparent py-5'}`}>
+        <div className="max-w-7xl mx-auto px-6 flex justify-between items-center">
+          <div 
+            className="flex items-center gap-3 cursor-pointer relative z-[60]" 
+            onClick={() => { onNavigate('home'); window.scrollTo({ top: 0, behavior: 'smooth' }); setIsMobileMenuOpen(false); }}
+          >
+            <img 
+              src="/logo.svg" 
+              alt="Logo El Estudiante" 
+              className="h-9 md:h-12 w-auto object-contain"
+            />
+            <span className="font-display font-bold text-lg md:text-xl tracking-tight hidden xs:block">
+              Librería <span className="hidden sm:inline">"El Estudiante"</span>
+            </span>
+          </div>
+          
+          <div className="hidden md:flex items-center gap-6 lg:gap-8 font-medium text-sm text-slate-600">
+            {navLinks.map((link) => (
+              link.view ? (
+                <button 
+                  key={link.label}
+                  onClick={() => onNavigate(link.view)}
+                  className={`flex items-center gap-1 ${activeView === link.view ? 'text-brand-teal font-bold' : 'hover:text-brand-teal'} transition-colors relative`}
+                >
+                  {link.label}
+                  {link.isOffer && (
+                    <span className="text-[9px] bg-brand-orange text-white px-1.5 py-0.5 rounded-full animate-bounce">TOP</span>
+                  )}
+                </button>
+              ) : (
+                <a 
+                  key={link.label}
+                  href={link.href} 
+                  onClick={(e) => handleSectionClick(e, link.sectionId!)}
+                  className="hover:text-brand-teal transition-colors"
+                >
+                  {link.label}
+                </a>
+              )
+            ))}
+          </div>
+
+          <div className="flex items-center gap-2 sm:gap-4 relative z-[60]">
             {isLoading ? (
-              <div className="p-2">
-                <Loader2 className="animate-spin text-slate-400" size={20} />
-              </div>
+              <Loader2 className="animate-spin text-slate-400" size={20} />
             ) : user ? (
-              <div className="flex items-center gap-3">
-                {isAdmin && (
-                  <button 
-                    onClick={onOpenAdmin}
-                    className="p-2.5 bg-brand-teal text-white rounded-xl hover:bg-brand-teal/90 transition-all shadow-lg shadow-brand-teal/20"
-                    title="Gestionar Catálogo"
-                  >
-                    <Settings size={20} />
-                  </button>
-                )}
+              <div className="relative">
                 <button 
                   onClick={() => setShowUserMenu(!showUserMenu)}
-                  className="flex items-center gap-2 bg-white border border-slate-200 p-1 pr-3 rounded-full hover:shadow-md transition-all"
+                  className="flex items-center gap-2 bg-slate-900 text-white p-1 pr-3 rounded-full hover:bg-slate-800 transition-colors shadow-lg shadow-slate-900/10"
                 >
-                  <img src={user.photoURL || ''} alt="User" className="w-8 h-8 rounded-full" />
-                  <span className="text-xs font-bold text-slate-700 hidden sm:block">{user.displayName?.split(' ')[0]}</span>
+                  <div className="w-8 h-8 rounded-full bg-brand-teal flex items-center justify-center text-xs font-bold ring-2 ring-white overflow-hidden">
+                    {user.photoURL ? <img src={user.photoURL} alt="" /> : (user.displayName?.charAt(0) || user.email?.charAt(0))}
+                  </div>
+                  <span className="text-[10px] font-bold hidden sm:inline pr-2">{user.displayName?.split(' ')?.[0] || 'Mi cuenta'}</span>
                 </button>
                 
                 <AnimatePresence>
                   {showUserMenu && (
                     <motion.div 
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: 10 }}
-                      className="absolute right-0 top-full mt-2 w-48 bg-white rounded-2xl shadow-xl border border-slate-100 overflow-hidden"
+                      initial={{ opacity: 0, scale: 0.95, y: 10 }}
+                      animate={{ opacity: 1, scale: 1, y: 0 }}
+                      exit={{ opacity: 0, scale: 0.95, y: 10 }}
+                      className="absolute right-0 mt-3 w-56 bg-white rounded-2xl shadow-2xl border border-slate-100 overflow-hidden"
                     >
-                      <button 
-                        onClick={() => { onLogout(); setShowUserMenu(false); }}
-                        className="w-full flex items-center gap-3 px-4 py-3 text-sm font-bold text-red-500 hover:bg-red-50 transition-colors"
-                      >
-                        <LogOut size={16} /> Cerrar Sesión
-                      </button>
+                      <div className="p-4 border-b border-slate-50 bg-slate-50/50">
+                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Conectado como</p>
+                        <p className="text-sm font-bold text-slate-800 truncate">{user.email}</p>
+                      </div>
+                      <div className="p-2">
+                        {isAdmin && (
+                          <button 
+                            onClick={() => { onOpenAdmin(); setShowUserMenu(false); }}
+                            className="w-full flex items-center gap-3 px-4 py-3 text-sm text-brand-teal font-bold hover:bg-teal-50 rounded-xl transition-colors"
+                          >
+                            <Settings size={18} /> Gestionar Catálogo
+                          </button>
+                        )}
+                        <button 
+                          onClick={() => { onLogout(); setShowUserMenu(false); }}
+                          className="w-full text-left px-4 py-3 text-sm text-red-500 hover:bg-red-50 rounded-xl transition-colors font-medium flex items-center gap-3"
+                        >
+                          <LogOut size={16} /> Cerrar Sesión
+                        </button>
+                      </div>
                     </motion.div>
                   )}
                 </AnimatePresence>
@@ -263,21 +282,66 @@ const Navbar = ({ user, isAdmin, onLogin, onLogout, onOpenAdmin, isLoading, acti
             ) : (
               <button 
                 onClick={onLogin}
-                className="flex items-center gap-2 text-slate-600 font-bold text-sm hover:text-brand-teal transition-colors px-4 py-2"
+                className="bg-slate-900 text-white px-5 sm:px-6 py-2 sm:py-2.5 rounded-full text-xs sm:text-sm font-bold hover:bg-slate-800 transition-all active:scale-95 shadow-lg shadow-slate-900/10 flex items-center gap-2"
               >
-                <User size={18} /> Mi cuenta
+                <User size={18} className="hidden xs:block" /> Acceso
               </button>
             )}
+            
+            <button 
+              className="md:hidden p-2 text-slate-600 hover:bg-slate-100 rounded-xl transition-colors"
+              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+              aria-label="Menú"
+            >
+              {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+            </button>
           </div>
-          <button 
-            onClick={() => window.open('https://wa.me/51953366458', '_blank')}
-            className="bg-brand-teal text-white px-5 py-2.5 rounded-full font-semibold text-sm hover:bg-brand-teal/90 transition-all shadow-md shadow-brand-teal/20"
-          >
-            Contactar
-          </button>
         </div>
-      </div>
-    </nav>
+
+        <AnimatePresence>
+          {isMobileMenuOpen && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: 'auto', opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              className="md:hidden bg-white border-t border-slate-50 overflow-hidden"
+            >
+              <div className="p-4 space-y-1">
+                {navLinks.map((link) => (
+                  link.view ? (
+                    <button 
+                      key={link.label}
+                      onClick={() => { onNavigate(link.view); setIsMobileMenuOpen(false); }}
+                      className={`w-full text-left px-6 py-4 rounded-2xl flex items-center justify-between ${activeView === link.view ? 'bg-teal-50 text-brand-teal font-bold' : 'text-slate-600 font-medium hover:bg-slate-50'}`}
+                    >
+                      {link.label}
+                      {link.isOffer && (
+                        <span className="text-[10px] bg-brand-orange text-white px-2 py-0.5 rounded-full font-bold">TOP</span>
+                      )}
+                    </button>
+                  ) : (
+                    <a 
+                      key={link.label}
+                      href={link.href} 
+                      onClick={(e) => handleSectionClick(e, link.sectionId!)}
+                      className="block px-6 py-4 rounded-2xl text-slate-600 font-medium hover:bg-slate-50 transition-colors"
+                    >
+                      {link.label}
+                    </a>
+                  )
+                ))}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </nav>
+      {isMobileMenuOpen && (
+        <div 
+          className="fixed inset-0 bg-slate-900/10 backdrop-blur-sm z-[40] md:hidden"
+          onClick={() => setIsMobileMenuOpen(false)}
+        />
+      )}
+    </>
   );
 };
 
@@ -431,21 +495,22 @@ const Hero = ({ onSearch, products }: { onSearch: (term: string) => void, produc
         </motion.div>
         
         <motion.div
-          initial={{ opacity: 0, scale: 0.9, rotateY: 15 }}
-          animate={{ opacity: 1, scale: 1, rotateY: 0 }}
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 1, ease: "easeOut" }}
-          className="relative hidden md:block"
+          className="relative block"
         >
           <div className="relative">
             <LatestNewsCarousel products={products} />
             
-            <div className="absolute -top-6 -left-6 bg-white p-5 rounded-3xl shadow-xl border border-slate-50 flex items-center gap-4">
-              <div className="w-12 h-12 bg-orange-100 text-brand-orange rounded-2xl flex items-center justify-center">
-                <Calendar size={24} />
+            <div className="absolute -top-4 -left-4 sm:-top-6 sm:-left-6 bg-white p-3 sm:p-5 rounded-2xl sm:rounded-3xl shadow-xl border border-slate-50 flex items-center gap-3 sm:gap-4 scale-90 sm:scale-100 origin-top-left">
+              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-orange-100 text-brand-orange rounded-xl sm:rounded-2xl flex items-center justify-center shrink-0">
+                <Calendar size={20} className="sm:hidden" />
+                <Calendar size={24} className="hidden sm:block" />
               </div>
-              <div>
-                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Lo Nuevo</p>
-                <p className="font-bold text-slate-900 text-sm">Escaparate Digital</p>
+              <div className="pr-2 sm:pr-4">
+                <p className="text-[8px] sm:text-[10px] font-black text-slate-400 uppercase tracking-widest">Lo Nuevo</p>
+                <p className="font-bold text-slate-900 text-xs sm:text-sm whitespace-nowrap">Escaparate Digital</p>
               </div>
             </div>
           </div>
@@ -461,31 +526,32 @@ const ProductCatalog = ({ products, loading, searchTerm, setSearchTerm }: { prod
   const [currentPage, setCurrentPage] = useState(1);
   const productsPerPage = 20;
   
-  const categories = [
+  const categories = useMemo(() => [
     { id: 'todos', name: 'Todos', icon: <ShoppingBag size={18} /> },
     { id: 'libros', name: 'Libros', icon: <BookOpen size={18} /> },
     { id: 'utiles', name: 'Útiles', icon: <PenTool size={18} /> },
     { id: 'tecnologia', name: 'Tecnología', icon: <Monitor size={18} /> }
-  ];
+  ], []);
 
-  const filteredProducts = products.filter(p => {
-    const matchesCategory = activeCategory === 'todos' || p.category === activeCategory;
-    const searchLower = searchTerm.toLowerCase();
-    
-    // Búsqueda segura para evitar crashes si faltan datos
-    const name = p.name?.toLowerCase() || '';
-    const sku = p.sku?.toLowerCase() || '';
-    const brand = p.authorOrBrand?.toLowerCase() || '';
-    const desc = p.description?.toLowerCase() || '';
-    
-    const matchesSearch = 
-      name.includes(searchLower) || 
-      sku.includes(searchLower) ||
-      brand.includes(searchLower) ||
-      desc.includes(searchLower);
+  const filteredProducts = useMemo(() => {
+    return products.filter(p => {
+      const matchesCategory = activeCategory === 'todos' || p.category === activeCategory;
+      const searchLower = searchTerm.toLowerCase();
       
-    return matchesCategory && matchesSearch;
-  });
+      const name = p.name?.toLowerCase() || '';
+      const sku = p.sku?.toLowerCase() || '';
+      const brand = p.authorOrBrand?.toLowerCase() || '';
+      const desc = p.description?.toLowerCase() || '';
+      
+      const matchesSearch = 
+        name.includes(searchLower) || 
+        sku.includes(searchLower) ||
+        brand.includes(searchLower) ||
+        desc.includes(searchLower);
+        
+      return matchesCategory && matchesSearch;
+    });
+  }, [products, activeCategory, searchTerm]);
 
   // Reset to page 1 on filter/search change
   useEffect(() => {
@@ -549,7 +615,7 @@ const ProductCatalog = ({ products, loading, searchTerm, setSearchTerm }: { prod
           </div>
         ) : (
           <>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 sm:gap-6">
               <AnimatePresence mode="popLayout">
                 {paginatedProducts.map((product) => (
                   <motion.div
@@ -777,7 +843,7 @@ const OffersPreview = ({ products, onSeeMore }: { products: Product[], onSeeMore
               className="bg-white p-4 rounded-3xl shadow-lg border border-brand-orange/10 relative overflow-hidden group"
             >
               <div className="aspect-square rounded-2xl overflow-hidden bg-slate-50 mb-4 relative">
-                <img src={p.imageUrl} alt={p.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
+                <img src={p.imageUrl} alt={p.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" referrerPolicy="no-referrer" />
                 <div className="absolute top-2 right-2 bg-brand-orange text-white text-[9px] font-black px-2 py-1 rounded-lg">
                   -{Math.round((1 - (p.offerPrice || 0) / p.price) * 100)}%
                 </div>
@@ -838,7 +904,7 @@ const OffersPage = ({ products }: { products: Product[] }) => {
                 className="bg-white rounded-3xl shadow-xl overflow-hidden border border-brand-orange/20 relative group"
               >
                 <div className="aspect-square relative overflow-hidden">
-                  <img src={p.imageUrl} alt={p.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
+                  <img src={p.imageUrl} alt={p.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" referrerPolicy="no-referrer" />
                   <div className="absolute top-4 right-4 bg-brand-orange text-white px-3 py-1.5 rounded-xl text-xs font-black shadow-lg">
                     AHORRA S/ {(p.price - (p.offerPrice || 0)).toFixed(2)}
                   </div>

@@ -158,7 +158,7 @@ export const CatalogManager: React.FC<CatalogManagerProps> = ({ products, onClos
                 <div key={p.id} className="group flex items-center justify-between p-3 rounded-2xl border border-slate-50 hover:border-brand-teal/20 hover:bg-teal-50/20 transition-all">
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-lg bg-slate-100 overflow-hidden">
-                      {p.imageUrl ? <img src={p.imageUrl} alt="" className="w-full h-full object-cover" referrerPolicy="no-referrer" /> : <div className="w-full h-full flex items-center justify-center text-slate-300"><Search size={14} /></div>}
+                      {p.imageUrl ? <img src={p.imageUrl} alt="" className="w-full h-full object-contain p-1" referrerPolicy="no-referrer" /> : <div className="w-full h-full flex items-center justify-center text-slate-300"><Search size={14} /></div>}
                     </div>
                     <div>
                       <h4 className="text-sm font-bold text-slate-800 leading-tight">{p.name}</h4>

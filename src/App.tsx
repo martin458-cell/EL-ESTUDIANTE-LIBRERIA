@@ -71,7 +71,7 @@ const ProductDetailModal = ({ product, onClose }: { product: Product, onClose: (
           <img 
             src={product.imageUrl || `https://picsum.photos/seed/${product.id}/600/600`} 
             alt={product.name} 
-            className="w-full h-full object-cover"
+            className="w-full h-full object-contain p-4"
             referrerPolicy="no-referrer"
           />
           {product.featured && (
@@ -384,7 +384,7 @@ const LatestNewsCarousel = ({ products }: { products: Product[] }) => {
             <img 
               src={current.imageUrl || `https://picsum.photos/seed/${current.id}/800/600`} 
               alt={current.name} 
-              className="w-full h-full object-cover"
+              className="w-full h-full object-contain p-6"
               referrerPolicy="no-referrer"
             />
             <div className="absolute inset-0 bg-gradient-to-t from-slate-900/80 via-transparent to-transparent"></div>
@@ -632,7 +632,7 @@ const ProductCatalog = ({ products, loading, searchTerm, setSearchTerm }: { prod
                       <img 
                         src={product.imageUrl || `https://picsum.photos/seed/${product.id}/400/400`} 
                         alt={product.name} 
-                        className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                        className="w-full h-full object-contain p-4 transition-transform duration-700 group-hover:scale-105"
                         referrerPolicy="no-referrer"
                       />
                       <div className="absolute top-3 left-3 flex flex-col gap-1.5">
@@ -1035,22 +1035,106 @@ const SocialShare = () => {
   ];
 
   return (
-    <section className="py-16 bg-white">
-      <div className="max-w-7xl mx-auto px-6 text-center">
-        <h3 className="font-display text-2xl font-bold mb-8">¡Comparte nuestro negocio y ayuda a crecer a Puquio!</h3>
-        <div className="flex flex-wrap justify-center gap-4">
-          {shareLinks.map((social) => (
-            <a 
-              key={social.name}
-              href={social.url}
+    <section className="py-20 bg-slate-50 relative overflow-hidden">
+      <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-brand-orange/20 to-transparent" />
+      
+      <div className="container mx-auto px-6 text-center relative z-10">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          className="mb-12"
+        >
+          <span className="text-brand-orange font-black text-xs uppercase tracking-widest bg-brand-orange/10 px-4 py-2 rounded-full mb-4 inline-block">
+            Conecta con nosotros
+          </span>
+          <h2 className="text-4xl md:text-5xl font-display font-black text-slate-900 mb-6">
+            Únete a nuestra Comunidad
+          </h2>
+          <p className="text-slate-500 max-w-2xl mx-auto text-lg">
+            Siguenos para recibir las mejores ofertas, lanzamientos exclusivos y contenido educativo para potenciar tu aprendizaje.
+          </p>
+        </motion.div>
+
+        <div className="flex flex-wrap justify-center gap-6 md:gap-10">
+          {shareLinks.map((link) => (
+            <motion.a
+              key={link.name}
+              href={link.url}
               target="_blank"
               rel="noreferrer"
-              className={`${social.color} text-white px-8 py-3 rounded-xl font-bold flex items-center gap-3 transition-transform hover:scale-105 active:scale-95 shadow-lg`}
+              whileHover={{ scale: 1.05, y: -5 }}
+              whileTap={{ scale: 0.95 }}
+              className={`flex items-center gap-3 px-8 py-5 text-white rounded-3xl font-black text-lg shadow-xl ${link.color} transition-all border-b-4 border-black/20`}
             >
-              {social.icon} {social.name}
-            </a>
+              {link.icon}
+              {link.name}
+            </motion.a>
           ))}
         </div>
+      </div>
+    </section>
+  );
+};
+
+const BrandStrip = () => {
+  const brands = [
+    { name: "Faber Castell", logo: "https://www.thepencompany.com/blog/wp-content/uploads/logo-now-1024x370.jpg" },
+    { name: "Artesco", logo: "https://artescooficial.com/artesco_facebook.jpg" },
+    { name: "Stanford", logo: "https://plazavea.vteximg.com.br/arquivos/STANDFORD_logo.jpg" },
+    { name: "HP", logo: "https://brandemia.org/contenido/subidas/2014/03/logo_hp_principal.jpg" },
+    { name: "Lenovo", logo: "https://upload.wikimedia.org/wikipedia/commons/b/bd/Branding_lenovo-logo_lenovologoposred_low_res.png" },
+    { name: "Alpha", logo: "https://ventas.utilmaxperu.com/img/m/3.jpg" },
+    { name: "Diale", logo: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSPkgBVkN-xNBBRB1WSXeE1rCjtMdH8N_eqYg&s" },
+    { name: "Vinifan", logo: "https://vinifan.com/assets/brand/logo.png" },
+    { name: "Pegafan", logo: "https://pegafan.com/wp-content/uploads/2020/12/logo-pegafan-web.png" },
+    { name: "Gigabyte", logo: "https://1000marcas.net/wp-content/uploads/2020/02/Gigabyte-Simbolo.jpg" },
+    { name: "Intel", logo: "https://upload.wikimedia.org/wikipedia/commons/7/7d/Intel_logo_%282006-2020%29.svg" },
+    { name: "AMD", logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/2/20/AMD_logo_pre-2013.svg/1280px-AMD_logo_pre-2013.svg.png" },
+    { name: "NVIDIA", logo: "https://1000marcas.net/wp-content/uploads/2020/03/Logo-NVIDIA.png" },
+    { name: "Epson", logo: "https://upload.wikimedia.org/wikipedia/commons/6/67/Epson_Logo.png" },
+    { name: "Brother", logo: "https://www.brother.es/-/media/images/brother-es/modules/feature-module-images/special-feature-modules/logos/brother-logo-azul.png?rev=67a6c1b01f6d46508a10f4db35e62d1c&hash=3CF69FD2C2E4A6397642FE115DDDA1D0" },
+    { name: "Teros", logo: "https://emisoft.cuscoinformatico.com/storage/marcas/teros-logo.jpg" }
+  ];
+
+  // Duplicamos la lista para crear un loop infinito sin saltos
+  const scrollingBrands = [...brands, ...brands, ...brands];
+
+  return (
+    <section className="py-12 bg-white overflow-hidden border-y border-slate-100">
+      <div className="container mx-auto px-6 mb-6">
+        <div className="text-center">
+          <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em]">Nuestras Marcas Aliadas</span>
+        </div>
+      </div>
+      
+      <div className="relative flex overflow-hidden">
+        <motion.div 
+          className="flex whitespace-nowrap gap-12 md:gap-20 items-center py-4"
+          animate={{ x: ["0%", "-50%"] }}
+          transition={{ 
+            ease: "linear", 
+            duration: 30, 
+            repeat: Infinity 
+          }}
+        >
+          {scrollingBrands.map((brand, idx) => (
+            <div 
+              key={`${brand.name}-${idx}`} 
+              className="h-16 md:h-20 w-32 md:w-48 flex items-center justify-center px-4 grayscale opacity-60 hover:grayscale-0 hover:opacity-100 transition-all duration-300"
+            >
+              <img 
+                src={brand.logo} 
+                alt={brand.name} 
+                className="max-h-full max-w-full object-contain" 
+                referrerPolicy="no-referrer"
+                onError={(e) => {
+                  (e.target as HTMLImageElement).src = `https://ui-avatars.com/api/?name=${brand.name}&background=f1f5f9&color=64748b&bold=true`;
+                }}
+              />
+            </div>
+          ))}
+        </motion.div>
       </div>
     </section>
   );
@@ -1226,7 +1310,23 @@ const Footer = ({ onNavigate, activeView }: {
           <ul className="space-y-4 text-sm">
             <li><a href="#" className="hover:text-white transition-colors">Términos y Condiciones</a></li>
             <li><a href="#" className="hover:text-white transition-colors">Política de Privacidad</a></li>
-            <li><a href="#" className="hover:text-white transition-colors">Libro de Reclamaciones</a></li>
+            <li className="pt-2">
+              <a 
+                href="https://wa.me/51953366458?text=Hola,%20deseo%20hacer%20un%20reclamo%20a%20través%20del%20Libro%20de%20Reclamaciones." 
+                target="_blank"
+                rel="noreferrer"
+                className="group flex flex-col gap-2 items-start"
+              >
+                <img 
+                  src="https://logosenvector.com/logo/img/libro-de-reclamaciones-37735.png" 
+                  alt="Libro de Reclamaciones" 
+                  className="h-10 w-auto opacity-70 group-hover:opacity-100 transition-opacity"
+                />
+                <span className="text-[10px] uppercase font-black tracking-tighter text-slate-500 group-hover:text-white transition-colors">
+                  Libro de Reclamaciones
+                </span>
+              </a>
+            </li>
           </ul>
         </div>
       </div>
@@ -1336,6 +1436,7 @@ export default function App() {
             <Benefits />
             <LocalPresence />
             <SocialShare />
+            <BrandStrip />
           </motion.main>
         ) : (
           <motion.div

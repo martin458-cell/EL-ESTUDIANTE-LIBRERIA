@@ -1426,13 +1426,13 @@ export default function App() {
             transition={{ duration: 0.3 }}
           >
             <Hero onSearch={setSearchTerm} products={products} />
-            <OffersPreview products={products} onSeeMore={() => handleNavigate('offers')} />
             <ProductCatalog 
               products={products} 
               loading={loading} 
               searchTerm={searchTerm} 
               setSearchTerm={setSearchTerm} 
             />
+            <OffersPreview products={products} onSeeMore={() => handleNavigate('offers')} />
             <Benefits />
             <LocalPresence />
             <SocialShare />

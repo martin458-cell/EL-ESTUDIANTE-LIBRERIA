@@ -201,9 +201,9 @@ const Navbar = ({ user, isAdmin, onLogin, onLogout, onOpenAdmin, isLoading, acti
               alt="Logo El Estudiante" 
               className="h-9 md:h-12 w-auto object-contain"
             />
-            <span className="font-display font-bold text-lg md:text-xl tracking-tight hidden xs:block">
+            <h1 className="font-display font-bold text-lg md:text-xl tracking-tight hidden xs:block">
               Librería <span className="hidden sm:inline">"El Estudiante"</span>
-            </span>
+            </h1>
           </div>
           
           <div className="hidden md:flex items-center gap-6 lg:gap-8 font-medium text-sm text-slate-600">
@@ -1238,7 +1238,7 @@ const Footer = ({ onNavigate, activeView }: {
               alt="Logo El Estudiante" 
               className="w-10 h-10 object-contain"
             />
-            <span className="font-display font-bold text-xl text-white tracking-tight">Librería "El Estudiante"</span>
+            <h3 className="font-display font-bold text-xl text-white tracking-tight">Librería "El Estudiante"</h3>
           </div>
           <p className="max-w-sm mb-6 leading-relaxed">
             Desde 1995 sirviendo a la comunidad de Puquio con los mejores productos educativos y tecnológicos. Comprometidos con el desarrollo de Ayacucho.

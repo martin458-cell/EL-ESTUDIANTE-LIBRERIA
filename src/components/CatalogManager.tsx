@@ -237,6 +237,15 @@ export const CatalogManager: React.FC<CatalogManagerProps> = ({ products, onClos
                     />
                   </div>
                   <div>
+                    <label className="text-[10px] font-black uppercase text-slate-400 mb-1 block">Descripción</label>
+                    <textarea 
+                      className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm focus:border-brand-teal outline-none min-h-[80px]"
+                      value={editingProduct.description || ''}
+                      onChange={e => setEditingProduct({...editingProduct, description: e.target.value})}
+                      placeholder="Descripción del producto..."
+                    />
+                  </div>
+                  <div>
                     <label className="text-[10px] font-black uppercase text-slate-400 mb-1 block">Categoría</label>
                     <select 
                       className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm focus:border-brand-teal outline-none capitalize"

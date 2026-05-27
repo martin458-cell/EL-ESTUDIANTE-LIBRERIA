@@ -29,7 +29,8 @@ import {
   X,
   Menu,
   ChevronLeft,
-  Calendar
+  Calendar,
+  Sparkles
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
@@ -37,6 +38,17 @@ import { auth, db, loginWithGoogle, logout } from './lib/firebase';
 import { useProducts, Product } from './hooks/useProducts';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { CatalogManager } from './components/CatalogManager';
+
+export interface SmartSearchConfig {
+  correctedQuery: string;
+  category: string;
+  minPrice: number | null;
+  maxPrice: number | null;
+  isOffer: boolean | null;
+  featured: boolean | null;
+  keywords: string[];
+  explanation: string;
+}
 
 // --- Components ---
 
@@ -449,7 +461,35 @@ const LatestNewsCarousel = ({ products }: { products: Product[] }) => {
   );
 };
 
-const Hero = ({ onSearch, products }: { onSearch: (term: string) => void, products: Product[] }) => {
+const Hero = ({ 
+  onSearch, 
+  products,
+  searchTerm,
+  isSmartLoading,
+  smartFilter,
+  onTriggerSmartSearch,
+  onClearSmartSearch
+}: { 
+  onSearch: (term: string) => void, 
+  products: Product[],
+  searchTerm: string,
+  isSmartLoading: boolean,
+  smartFilter: SmartSearchConfig | null,
+  onTriggerSmartSearch: (query: string) => void,
+  onClearSmartSearch: () => void
+}) => {
+  const [searchValue, setSearchValue] = useState(searchTerm);
+
+  useEffect(() => {
+    setSearchValue(searchTerm);
+  }, [searchTerm]);
+
+  const handleClear = () => {
+    setSearchValue('');
+    onSearch('');
+    onClearSmartSearch();
+  };
+
   return (
     <section className="relative pt-32 pb-24 overflow-hidden bg-bg-warm">
       <div className="absolute top-0 right-0 -z-10 w-1/2 h-full opacity-10 blur-3xl bg-brand-teal rounded-full transform translate-x-1/2 -translate-y-1/2"></div>
@@ -475,21 +515,118 @@ const Hero = ({ onSearch, products }: { onSearch: (term: string) => void, produc
             Explora las últimas novedades que hemos traído a Puquio. Tecnología, libros y útiles para potenciar tu talento.
           </p>
           
-          <div className="flex flex-wrap gap-4">
-            <button 
-              onClick={() => document.getElementById('catalogo')?.scrollIntoView({ behavior: 'smooth' })}
-              className="bg-brand-teal text-white px-8 py-4 rounded-2xl font-bold text-lg hover:shadow-2xl transition-all flex items-center gap-2 shadow-xl shadow-brand-teal/25 hover:-translate-y-1"
-            >
-              Explorar Catálogo <ChevronRight size={20} />
-            </button>
-            <div className="relative group max-w-xs w-full">
-              <input 
-                type="text" 
-                placeholder="Buscar en la tienda..." 
-                onChange={(e) => onSearch(e.target.value)}
-                className="w-full bg-white border-2 border-slate-100 rounded-2xl px-4 py-4 pl-12 focus:border-brand-teal focus:ring-0 outline-none transition-all shadow-sm"
-              />
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-brand-teal transition-colors" size={20} />
+          <div className="space-y-4 max-w-md">
+            <div className="flex flex-col sm:flex-row gap-3">
+              <div className="relative flex-1">
+                <input 
+                  type="text" 
+                  value={searchValue}
+                  placeholder="Ej: mochila de menos de 80..." 
+                  onChange={(e) => {
+                    setSearchValue(e.target.value);
+                    onSearch(e.target.value);
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      onTriggerSmartSearch(searchValue);
+                    }
+                  }}
+                  className="w-full bg-white border-2 border-slate-100 rounded-2xl px-4 py-4 pl-12 pr-10 focus:border-brand-teal focus:ring-0 outline-none transition-all shadow-sm text-sm"
+                />
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-brand-teal transition-colors" size={18} />
+                {searchValue && (
+                  <button 
+                    onClick={handleClear}
+                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer"
+                  >
+                    <X size={16} />
+                  </button>
+                )}
+              </div>
+              <button
+                disabled={isSmartLoading || !searchValue.trim()}
+                onClick={() => onTriggerSmartSearch(searchValue)}
+                className="bg-brand-teal hover:bg-brand-teal/90 disabled:bg-slate-100 disabled:text-slate-400 disabled:opacity-75 text-white font-bold px-5 py-4 rounded-2xl cursor-pointer flex items-center justify-center gap-2 transition-all shadow-lg shadow-brand-teal/20 select-none text-sm min-w-[130px]"
+                title="Búsqueda Inteligente con Inteligencia Artificial"
+              >
+                {isSmartLoading ? (
+                  <Loader2 className="animate-spin" size={16} />
+                ) : (
+                  <Sparkles size={16} className="text-yellow-350" />
+                )}
+                <span>Buscar con IA</span>
+              </button>
+            </div>
+
+            {smartFilter && (
+              <div className="p-3 bg-teal-50/60 rounded-2xl border border-brand-teal/10 flex items-start gap-2.5 animate-fade-in shadow-xs">
+                <div className="p-1.5 bg-brand-teal/10 rounded-lg text-brand-teal shrink-0 mt-0.5">
+                  <Sparkles size={14} className="text-brand-teal animate-pulse" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-[10px] font-black uppercase tracking-widest text-brand-teal/80">Asistente de IA Activo</p>
+                  <p className="text-xs font-semibold text-slate-700 mt-0.5">{smartFilter.explanation}</p>
+                  <div className="flex flex-wrap gap-1.5 mt-1.5">
+                    {smartFilter.category !== 'todos' && (
+                      <span className="text-[9px] font-black uppercase text-slate-500 bg-white border border-slate-100 px-1.5 py-0.5 rounded-md">
+                        Categoría: {smartFilter.category}
+                      </span>
+                    )}
+                    {smartFilter.isOffer && (
+                      <span className="text-[9px] font-black uppercase text-rose-600 bg-rose-50 border border-rose-100 px-1.5 py-0.5 rounded-md">
+                        En Oferta
+                      </span>
+                    )}
+                    {smartFilter.featured && (
+                      <span className="text-[9px] font-black uppercase text-yellow-600 bg-yellow-50 border border-yellow-100 px-1.5 py-0.5 rounded-md">
+                        Novedad
+                      </span>
+                    )}
+                    {smartFilter.maxPrice !== null && (
+                      <span className="text-[9px] font-black uppercase text-teal-700 bg-white border border-slate-100 px-1.5 py-0.5 rounded-md">
+                        Máx: S/ {smartFilter.maxPrice}
+                      </span>
+                    )}
+                    {smartFilter.keywords.map((kw, idx) => (
+                      <span key={idx} className="text-[9px] font-bold text-slate-600 bg-white border border-slate-100 px-1.5 py-0.5 rounded-md capitalize">
+                        "{kw}"
+                      </span>
+                    ))}
+                  </div>
+                </div>
+                <button 
+                  onClick={handleClear} 
+                  className="text-slate-400 hover:text-slate-600 cursor-pointer text-sm font-bold p-0.5"
+                  title="Quitar Búsqueda IA"
+                >
+                  <X size={14} />
+                </button>
+              </div>
+            )}
+
+            <div className="flex items-center gap-2 text-xs text-slate-400 font-medium">
+              <span>O prueba:</span>
+              <button 
+                onClick={() => {
+                  setSearchValue("cuadernos en oferta");
+                  onSearch("cuadernos en oferta");
+                  onTriggerSmartSearch("cuadernos en oferta");
+                }}
+                className="text-brand-teal hover:underline text-[11px] font-bold cursor-pointer"
+              >
+                "cuadernos en oferta"
+              </button>
+              <span>•</span>
+              <button 
+                onClick={() => {
+                  setSearchValue("libros menos de 60");
+                  onSearch("libros menos de 60");
+                  onTriggerSmartSearch("libros menos de 60");
+                }}
+                className="text-brand-teal hover:underline text-[11px] font-bold cursor-pointer"
+              >
+                "libros menos de 60"
+              </button>
             </div>
           </div>
         </motion.div>
@@ -520,7 +657,21 @@ const Hero = ({ onSearch, products }: { onSearch: (term: string) => void, produc
   );
 };
 
-const ProductCatalog = ({ products, loading, searchTerm, setSearchTerm }: { products: Product[], loading: boolean, searchTerm: string, setSearchTerm: (term: string) => void }) => {
+const ProductCatalog = ({ 
+  products, 
+  loading, 
+  searchTerm, 
+  setSearchTerm,
+  smartFilter,
+  onClearSmartSearch
+}: { 
+  products: Product[], 
+  loading: boolean, 
+  searchTerm: string, 
+  setSearchTerm: (term: string) => void,
+  smartFilter: SmartSearchConfig | null,
+  onClearSmartSearch: () => void
+}) => {
   const [activeCategory, setActiveCategory] = useState('todos');
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
@@ -533,30 +684,68 @@ const ProductCatalog = ({ products, loading, searchTerm, setSearchTerm }: { prod
     { id: 'tecnologia', name: 'Tecnología', icon: <Monitor size={18} /> }
   ], []);
 
+  // Sync category selected by smart search
+  useEffect(() => {
+    if (smartFilter && smartFilter.category) {
+      setActiveCategory(smartFilter.category);
+    }
+  }, [smartFilter]);
+
   const filteredProducts = useMemo(() => {
     return products.filter(p => {
-      const matchesCategory = activeCategory === 'todos' || p.category === activeCategory;
+      // If smartFilter is active, its category takes precedence, otherwise the selected tab category
+      const targetCategory = smartFilter ? smartFilter.category : activeCategory;
+      const matchesCategory = targetCategory === 'todos' || p.category === targetCategory;
+      if (!matchesCategory) return false;
+
+      if (smartFilter) {
+        // Price limits
+        if (smartFilter.minPrice !== null && p.price < smartFilter.minPrice) return false;
+        if (smartFilter.maxPrice !== null && p.price > smartFilter.maxPrice) return false;
+
+        // Is offer tag
+        if (smartFilter.isOffer === true && !p.isOffer) return false;
+
+        // Featured tag
+        if (smartFilter.featured === true && !p.featured) return false;
+
+        // Keyword checking
+        if (smartFilter.keywords && smartFilter.keywords.length > 0) {
+          const nameLower = (p.name || '').toLowerCase();
+          const descLower = (p.description || '').toLowerCase();
+          const brandLower = (p.authorOrBrand || '').toLowerCase();
+          const skuLower = (p.sku || '').toLowerCase();
+
+          const matchesAnyKeyword = smartFilter.keywords.some(kw => {
+            const kl = kw.toLowerCase();
+            return nameLower.includes(kl) || descLower.includes(kl) || brandLower.includes(kl) || skuLower.includes(kl);
+          });
+          if (!matchesAnyKeyword) return false;
+        }
+
+        return true;
+      }
+
+      // Default classic search
       const searchLower = searchTerm.toLowerCase();
-      
       const name = p.name?.toLowerCase() || '';
       const sku = p.sku?.toLowerCase() || '';
       const brand = p.authorOrBrand?.toLowerCase() || '';
       const desc = p.description?.toLowerCase() || '';
       
-      const matchesSearch = 
+      return (
         name.includes(searchLower) || 
         sku.includes(searchLower) ||
         brand.includes(searchLower) ||
-        desc.includes(searchLower);
-        
-      return matchesCategory && matchesSearch;
+        desc.includes(searchLower)
+      );
     });
-  }, [products, activeCategory, searchTerm]);
+  }, [products, activeCategory, searchTerm, smartFilter]);
 
-  // Reset to page 1 on filter/search change
+  // Reset to page 1 on filter/search/smartFilter change
   useEffect(() => {
     setCurrentPage(1);
-  }, [activeCategory, searchTerm]);
+  }, [activeCategory, searchTerm, smartFilter]);
 
   const totalPages = Math.ceil(filteredProducts.length / productsPerPage);
   const paginatedProducts = filteredProducts.slice(
@@ -577,9 +766,12 @@ const ProductCatalog = ({ products, loading, searchTerm, setSearchTerm }: { prod
             {categories.map((cat) => (
               <button
                 key={cat.id}
-                onClick={() => setActiveCategory(cat.id)}
+                onClick={() => {
+                  setActiveCategory(cat.id);
+                  // If smart filter is active, change category but we can also strip category overwrite if needed
+                }}
                 className={`flex items-center gap-2 px-6 py-3 rounded-xl font-bold text-sm transition-all whitespace-nowrap ${
-                  activeCategory === cat.id 
+                  (smartFilter ? smartFilter.category : activeCategory) === cat.id 
                     ? 'bg-white text-brand-teal shadow-md translate-y-0' 
                     : 'text-slate-500 hover:text-slate-700'
                 }`}
@@ -599,18 +791,21 @@ const ProductCatalog = ({ products, loading, searchTerm, setSearchTerm }: { prod
           <div className="text-center py-24 bg-slate-50 rounded-[3rem] border-2 border-dashed border-slate-200">
             <Search className="mx-auto text-slate-300 mb-6" size={64} />
             <h3 className="text-2xl font-bold text-slate-800 mb-2">Sin coincidencias</h3>
-            <p className="text-slate-500">No encontramos productos que coincidan con "<span className="font-bold text-brand-teal">{searchTerm}</span>".</p>
+            <p className="text-slate-500">
+              No encontramos productos que coincidan{smartFilter ? ` con el filtro inteligente para "${smartFilter.correctedQuery}"` : ` con "${searchTerm}"`}.
+            </p>
             <button 
               onClick={() => {
-                const searchInputs = document.querySelectorAll('input[placeholder*="Buscar"]');
+                const searchInputs = document.querySelectorAll('input[placeholder*="Buscar"], input[placeholder*="mochila"]');
                 searchInputs.forEach(input => {
                   (input as HTMLInputElement).value = '';
                 });
                 setSearchTerm('');
+                onClearSmartSearch();
               }}
-              className="mt-6 text-brand-teal font-bold hover:underline"
+              className="mt-6 text-brand-teal font-bold hover:underline cursor-pointer"
             >
-              Limpiar búsqueda
+              Limpiar filtros y búsqueda
             </button>
           </div>
         ) : (
@@ -1348,6 +1543,39 @@ export default function App() {
   const [isAuthLoading, setIsAuthLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [activeView, setActiveView] = useState<'home' | 'offers'>('home');
+  const [smartFilter, setSmartFilter] = useState<SmartSearchConfig | null>(null);
+  const [isSmartLoading, setIsSmartLoading] = useState(false);
+
+  const handleTriggerSmartSearch = async (queryText: string) => {
+    if (!queryText || !queryText.trim()) return;
+    setIsSmartLoading(true);
+    try {
+      const response = await fetch('/api/smart-search', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ query: queryText })
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setSmartFilter(data);
+        if (data.correctedQuery) {
+          setSearchTerm(data.correctedQuery);
+        }
+      } else {
+        console.error("Smart search API error:", response.statusText);
+      }
+    } catch (err) {
+      console.error("Smart search exception:", err);
+    } finally {
+      setIsSmartLoading(false);
+    }
+  };
+
+  const handleClearSmartSearch = () => {
+    setSmartFilter(null);
+  };
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
@@ -1425,12 +1653,22 @@ export default function App() {
             exit={{ opacity: 0, x: 20 }}
             transition={{ duration: 0.3 }}
           >
-            <Hero onSearch={setSearchTerm} products={products} />
+            <Hero 
+              onSearch={setSearchTerm} 
+              products={products} 
+              searchTerm={searchTerm}
+              isSmartLoading={isSmartLoading}
+              smartFilter={smartFilter}
+              onTriggerSmartSearch={handleTriggerSmartSearch}
+              onClearSmartSearch={handleClearSmartSearch}
+            />
             <ProductCatalog 
               products={products} 
               loading={loading} 
               searchTerm={searchTerm} 
               setSearchTerm={setSearchTerm} 
+              smartFilter={smartFilter}
+              onClearSmartSearch={handleClearSmartSearch}
             />
             <OffersPreview products={products} onSeeMore={() => handleNavigate('offers')} />
             <Benefits />

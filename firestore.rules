@@ -16,15 +16,22 @@ service cloud.firestore {
     // Validation for Product
     function isValidProduct(data) {
       return data.keys().hasAll(['name', 'price', 'stock', 'category']) &&
-             data.name is string && data.name.size() > 0 && data.name.size() <= 200 &&
+             data.name is string && data.name.size() > 0 && data.name.size() <= 500 &&
              data.price is number && data.price >= 0 &&
-             data.stock is int && data.stock >= 0 &&
-             data.category in ['libros', 'utiles', 'tecnologia'] &&
-             (!('description' in data) || (data.description is string && data.description.size() <= 2000)) &&
+             data.stock is number && data.stock >= 0 &&
+             data.category is string &&
+             (!('sku' in data) || data.sku is string) &&
+             (!('authorOrBrand' in data) || data.authorOrBrand is string) &&
+             (!('costPrice' in data) || data.costPrice is number) &&
+             (!('minStock' in data) || data.minStock is number) &&
+             (!('featured' in data) || data.featured is bool) &&
+             (!('isOffer' in data) || data.isOffer is bool) &&
+             (!('offerPrice' in data) || data.offerPrice == null || data.offerPrice is number) &&
+             (!('description' in data) || (data.description is string && data.description.size() <= 5000)) &&
              (!('imageUrl' in data) || (data.imageUrl is string && data.imageUrl.size() <= 2000000)) &&
-             (!('tag' in data) || (data.tag is string && data.tag.size() <= 50)) &&
-             (!('createdAt' in data) || data.createdAt == request.time) &&
-             (!('updatedAt' in data) || data.updatedAt == request.time);
+             (!('tag' in data) || (data.tag is string && data.tag.size() <= 100)) &&
+             (!('createdAt' in data) || data.createdAt == request.time || data.createdAt is timestamp) &&
+             (!('updatedAt' in data) || data.updatedAt == request.time || data.updatedAt is timestamp);
     }
 
     // --- Collections ---
@@ -34,14 +41,9 @@ service cloud.firestore {
       allow read: if true; // Public catalog
       
       allow create: if isAdmin() && isValidId(productId) && isValidProduct(incoming()) && 
-                    incoming().createdAt == request.time;
+                    (incoming().createdAt == request.time || incoming().createdAt is timestamp);
       
-      allow update: if isAdmin() && isValidProduct(incoming()) && (
-        // Action: Update basic info
-        (incoming().diff(existing()).affectedKeys().hasOnly(['name', 'price', 'stock', 'category', 'description', 'imageUrl', 'tag', 'updatedAt']) &&
-         incoming().updatedAt == request.time &&
-         incoming().createdAt == existing().createdAt)
-      );
+      allow update: if isAdmin() && isValidProduct(incoming());
       
       allow delete: if isAdmin();
     }
@@ -54,7 +56,7 @@ service cloud.firestore {
                     request.auth.token.email == "martinherickcahuanamendoza@gmail.com" &&
                     request.auth.token.email_verified == true &&
                     incoming().email == request.auth.token.email &&
-                    incoming().role == "admin";
+                    (incoming().role == "admin" || incoming().role == "owner");
                     
       allow write: if isAdmin();
     }

@@ -2,5 +2,7 @@
   "name": "Librería \"El Estudiante\"",
   "description": "Tu socio en educación y tecnología en Puquio. Libros, útiles escolares y lo último en computación.",
   "requestFramePermissions": [],
-  "majorCapabilities": []
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
 }

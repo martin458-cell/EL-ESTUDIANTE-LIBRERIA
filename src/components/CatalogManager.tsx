@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { Product } from '../hooks/useProducts';
 import { CatalogService } from '../services/catalogService';
 import * as XLSX from 'xlsx';
+import { ProductQuoter } from './ProductQuoter';
 
 interface CatalogManagerProps {
   products: Product[];
@@ -11,6 +12,7 @@ interface CatalogManagerProps {
 }
 
 export const CatalogManager: React.FC<CatalogManagerProps> = ({ products, onClose }) => {
+  const [activeTab, setActiveTab] = useState<'catalog' | 'quoter'>('catalog');
   const [editingProduct, setEditingProduct] = useState<Partial<Product> | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [isSaving, setIsSaving] = useState(false);
@@ -99,211 +101,250 @@ export const CatalogManager: React.FC<CatalogManagerProps> = ({ products, onClos
       <motion.div 
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="bg-white w-full max-w-4xl max-h-[85vh] rounded-3xl shadow-2xl flex flex-col overflow-hidden"
+        className="bg-white w-full max-w-5xl max-h-[90vh] md:max-h-[85vh] rounded-3xl shadow-2xl flex flex-col overflow-hidden transition-all duration-300"
       >
         {/* Header */}
-        <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+        <div className="p-6 border-b border-slate-100 flex flex-col sm:flex-row justify-between sm:items-center gap-4 bg-slate-50/50">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-brand-teal text-white rounded-xl flex items-center justify-center">
               <Package size={24} />
             </div>
             <div>
-              <h2 className="text-xl font-bold text-slate-900">Catálogo Maestro</h2>
-              <p className="text-xs text-slate-500 font-medium">Libros · Útiles · Tecnología</p>
+              <h2 className="text-xl font-bold text-slate-1000">Módulo de Administración</h2>
+              <p className="text-xs text-slate-500 font-medium font-sans">Gestión de Almacén · Generador de Proformas PDF</p>
             </div>
           </div>
-          <button onClick={onClose} className="p-2 hover:bg-slate-200 rounded-full transition-colors">
+
+          {/* TAB SELECTOR */}
+          <div className="flex bg-slate-100 p-1.5 rounded-2xl border border-slate-200">
+            <button
+              id="admin-catalog-tab-button"
+              onClick={() => setActiveTab('catalog')}
+              className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center gap-2 ${
+                activeTab === 'catalog'
+                  ? 'bg-slate-900 text-white shadow-md'
+                  : 'text-slate-500 hover:text-slate-800'
+              }`}
+            >
+              <Package size={14} />
+              Inventario
+            </button>
+            <button
+              id="admin-quoter-tab-button"
+              onClick={() => setActiveTab('quoter')}
+              className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center gap-2 ${
+                activeTab === 'quoter'
+                  ? 'bg-slate-900 text-white shadow-md'
+                  : 'text-slate-500 hover:text-slate-800'
+              }`}
+            >
+              <FileDown size={14} />
+              Cotizador PDF
+            </button>
+          </div>
+
+          <button onClick={onClose} className="p-2 hover:bg-slate-200 rounded-full transition-colors self-end sm:self-auto">
             <X size={20} />
           </button>
         </div>
 
-        <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
-          {/* List Section */}
-          <div className="flex-1 p-6 overflow-y-auto border-r border-slate-50">
-            <div className="flex gap-3 mb-6">
-              <div className="relative flex-1">
-                <Search className="absolute left-3 top-2.5 text-slate-400" size={16} />
-                <input 
-                  type="text" 
-                  placeholder="Buscar por nombre o SKU..."
-                  className="w-full bg-slate-100 border-none rounded-xl py-2 px-10 text-sm focus:ring-2 ring-brand-teal outline-none transition-all"
-                  value={searchTerm}
-                  onChange={e => setSearchTerm(e.target.value)}
-                />
-              </div>
-              <input 
-                type="file" 
-                ref={fileInputRef} 
-                onChange={handleExcelImport} 
-                accept=".xlsx, .xls" 
-                className="hidden" 
-              />
-              <button 
-                onClick={() => fileInputRef.current?.click()}
-                className="bg-slate-800 text-white px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-2 hover:bg-slate-700 transition-all shadow-lg"
-                title="Importar desde Excel"
-              >
-                <UploadCloud size={18} /> <span className="hidden sm:inline">Excel</span>
-              </button>
-              <button 
-                onClick={() => setEditingProduct({ category: 'libros', featured: false, minStock: 5, stock: 0, price: 0, costPrice: 0 })}
-                className="bg-brand-teal text-white px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-2 hover:bg-brand-teal/90 transition-all shadow-lg shadow-brand-teal/20"
-              >
-                <Plus size={18} /> Nuevo
-              </button>
-            </div>
-
-            <div className="space-y-2">
-              {filtered.map(p => (
-                <div key={p.id} className="group flex items-center justify-between p-3 rounded-2xl border border-slate-50 hover:border-brand-teal/20 hover:bg-teal-50/20 transition-all">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-lg bg-slate-100 overflow-hidden">
-                      {p.imageUrl ? <img src={p.imageUrl} alt="" className="w-full h-full object-contain p-1" referrerPolicy="no-referrer" /> : <div className="w-full h-full flex items-center justify-center text-slate-300"><Search size={14} /></div>}
-                    </div>
-                    <div>
-                      <h4 className="text-sm font-bold text-slate-800 leading-tight">{p.name}</h4>
-                      <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">{p.sku} · {p.category}</p>
-                    </div>
-                  </div>
-                  <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button onClick={() => setEditingProduct(p)} className="p-2 hover:bg-white rounded-lg text-slate-500 shadow-sm border border-slate-100"><Edit2 size={14} /></button>
-                    <button onClick={() => handleDelete(p.id)} className="p-2 hover:bg-red-50 rounded-lg text-red-500 shadow-sm border border-slate-100"><Trash2 size={14} /></button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Form Section */}
-          <AnimatePresence>
-            {editingProduct && (
-              <motion.div 
-                initial={{ x: 200, opacity: 0 }}
-                animate={{ x: 0, opacity: 1 }}
-                exit={{ x: 200, opacity: 0 }}
-                className="w-full md:w-80 bg-slate-50 p-6 border-l border-slate-100 overflow-y-auto"
-              >
-                <div className="flex justify-between items-center mb-6">
-                  <h3 className="font-bold text-slate-800">{editingProduct.id ? 'Editar' : 'Nuevo'}</h3>
-                  <button onClick={() => setEditingProduct(null)} className="text-slate-400 hover:text-slate-600"><X size={16} /></button>
-                </div>
-
-                <form onSubmit={handleSave} className="space-y-4">
-                  <div>
-                    <label className="text-[10px] font-black uppercase text-slate-400 mb-1 block">Código SKU</label>
+        <div className="flex-1 flex overflow-hidden">
+          {activeTab === 'catalog' ? (
+            <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
+              {/* List Section */}
+              <div className="flex-1 p-6 overflow-y-auto border-r border-slate-50">
+                <div className="flex gap-3 mb-6">
+                  <div className="relative flex-1">
+                    <Search className="absolute left-3 top-2.5 text-slate-400" size={16} />
                     <input 
-                      required
-                      className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm focus:border-brand-teal outline-none"
-                      value={editingProduct.sku || ''}
-                      onChange={e => setEditingProduct({...editingProduct, sku: e.target.value.toUpperCase()})}
+                      type="text" 
+                      placeholder="Buscar por nombre o SKU..."
+                      className="w-full bg-slate-100 border-none rounded-xl py-2 px-10 text-sm focus:ring-2 ring-brand-teal outline-none transition-all"
+                      value={searchTerm}
+                      onChange={e => setSearchTerm(e.target.value)}
                     />
                   </div>
-                  <div>
-                    <label className="text-[10px] font-black uppercase text-slate-400 mb-1 block">Nombre</label>
-                    <input 
-                      required
-                      className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm focus:border-brand-teal outline-none"
-                      value={editingProduct.name || ''}
-                      onChange={e => setEditingProduct({...editingProduct, name: e.target.value})}
-                    />
-                  </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="text-[10px] font-black uppercase text-slate-400 mb-1 block">Precio S/</label>
-                      <input 
-                        type="number"
-                        className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm focus:border-brand-teal outline-none"
-                        value={editingProduct.price || ''}
-                        onChange={e => setEditingProduct({...editingProduct, price: Number(e.target.value)})}
-                      />
-                    </div>
-                    <div>
-                      <label className="text-[10px] font-black uppercase text-slate-400 mb-1 block">Stock</label>
-                      <input 
-                        type="number"
-                        className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm focus:border-brand-teal outline-none"
-                        value={editingProduct.stock || ''}
-                        onChange={e => setEditingProduct({...editingProduct, stock: Number(e.target.value)})}
-                      />
-                    </div>
-                  </div>
-                  <div>
-                    <label className="text-[10px] font-black uppercase text-slate-400 mb-1 block">Foto URL (u opcional)</label>
-                    <input 
-                      className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm focus:border-brand-teal outline-none"
-                      value={editingProduct.imageUrl || ''}
-                      onChange={e => setEditingProduct({...editingProduct, imageUrl: e.target.value})}
-                      placeholder="https://..."
-                    />
-                  </div>
-                  <div>
-                    <label className="text-[10px] font-black uppercase text-slate-400 mb-1 block">Descripción</label>
-                    <textarea 
-                      className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm focus:border-brand-teal outline-none min-h-[80px]"
-                      value={editingProduct.description || ''}
-                      onChange={e => setEditingProduct({...editingProduct, description: e.target.value})}
-                      placeholder="Descripción del producto..."
-                    />
-                  </div>
-                  <div>
-                    <label className="text-[10px] font-black uppercase text-slate-400 mb-1 block">Categoría</label>
-                    <select 
-                      className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm focus:border-brand-teal outline-none capitalize"
-                      value={editingProduct.category || 'libros'}
-                      onChange={e => setEditingProduct({...editingProduct, category: e.target.value})}
-                    >
-                      {categories.map(c => <option key={c} value={c}>{c}</option>)}
-                    </select>
-                  </div>
-
-                  <div className="bg-teal-50/50 p-4 rounded-xl border border-teal-100 space-y-3">
-                    <label className="flex items-center gap-2 cursor-pointer">
-                      <input 
-                        type="checkbox"
-                        className="w-4 h-4 rounded text-brand-teal focus:ring-brand-teal"
-                        checked={editingProduct.isOffer || false}
-                        onChange={e => setEditingProduct({...editingProduct, isOffer: e.target.checked})}
-                      />
-                      <span className="text-xs font-bold text-slate-700 uppercase tracking-wide">Poner en Oferta / Remate</span>
-                    </label>
-                    
-                    {editingProduct.isOffer && (
-                      <motion.div 
-                        initial={{ height: 0, opacity: 0 }}
-                        animate={{ height: 'auto', opacity: 1 }}
-                        className="overflow-hidden"
-                      >
-                        <label className="text-[10px] font-black uppercase text-brand-teal mb-1 block">Precio de Oferta S/</label>
-                        <input 
-                          type="number"
-                          className="w-full bg-white border border-teal-200 rounded-lg px-3 py-2 text-sm focus:border-brand-teal outline-none"
-                          value={editingProduct.offerPrice || ''}
-                          onChange={e => setEditingProduct({...editingProduct, offerPrice: Number(e.target.value)})}
-                          placeholder="0.00"
-                        />
-                      </motion.div>
-                    )}
-                  </div>
-
+                  <input 
+                    type="file" 
+                    ref={fileInputRef} 
+                    onChange={handleExcelImport} 
+                    accept=".xlsx, .xls" 
+                    className="hidden" 
+                  />
                   <button 
-                    disabled={isSaving}
-                    type="submit" 
-                    className="w-full bg-slate-900 text-white py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2 hover:bg-slate-800 transition-all disabled:opacity-50"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="bg-slate-800 text-white px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-2 hover:bg-slate-700 transition-all shadow-lg"
+                    title="Importar desde Excel"
                   >
-                    {isSaving ? <Loader2 className="animate-spin" size={16} /> : <Save size={16} />}
-                    {editingProduct.id ? 'Actualizar' : 'Guardar'}
+                    <UploadCloud size={18} /> <span className="hidden sm:inline">Excel</span>
                   </button>
-                </form>
-              </motion.div>
-            )}
-          </AnimatePresence>
+                  <button 
+                    onClick={() => setEditingProduct({ category: 'libros', featured: false, minStock: 5, stock: 0, price: 0, costPrice: 0 })}
+                    className="bg-brand-teal text-white px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-2 hover:bg-brand-teal/90 transition-all shadow-lg shadow-brand-teal/20"
+                  >
+                    <Plus size={18} /> Nuevo
+                  </button>
+                </div>
+
+                <div className="space-y-2">
+                  {filtered.map(p => (
+                    <div key={p.id} className="group flex items-center justify-between p-3 rounded-2xl border border-slate-50 hover:border-brand-teal/20 hover:bg-teal-50/20 transition-all">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-lg bg-slate-100 overflow-hidden">
+                          {p.imageUrl ? <img src={p.imageUrl} alt="" className="w-full h-full object-contain p-1" referrerPolicy="no-referrer" /> : <div className="w-full h-full flex items-center justify-center text-slate-300"><Search size={14} /></div>}
+                        </div>
+                        <div>
+                          <h4 className="text-sm font-bold text-slate-800 leading-tight">{p.name}</h4>
+                          <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">{p.sku} · {p.category}</p>
+                        </div>
+                      </div>
+                      <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button onClick={() => setEditingProduct(p)} className="p-2 hover:bg-white rounded-lg text-slate-500 shadow-sm border border-slate-100"><Edit2 size={14} /></button>
+                        <button onClick={() => handleDelete(p.id)} className="p-2 hover:bg-red-50 rounded-lg text-red-500 shadow-sm border border-slate-100"><Trash2 size={14} /></button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Form Section */}
+              <AnimatePresence>
+                {editingProduct && (
+                  <motion.div 
+                    initial={{ x: 200, opacity: 0 }}
+                    animate={{ x: 0, opacity: 1 }}
+                    exit={{ x: 200, opacity: 0 }}
+                    className="w-full md:w-80 bg-slate-50 p-6 border-l border-slate-100 overflow-y-auto"
+                  >
+                    <div className="flex justify-between items-center mb-6">
+                      <h3 className="font-bold text-slate-800">{editingProduct.id ? 'Editar' : 'Nuevo'}</h3>
+                      <button onClick={() => setEditingProduct(null)} className="text-slate-400 hover:text-slate-600"><X size={16} /></button>
+                    </div>
+
+                    <form onSubmit={handleSave} className="space-y-4">
+                      <div>
+                        <label className="text-[10px] font-black uppercase text-slate-400 mb-1 block">Código SKU</label>
+                        <input 
+                          required
+                          className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm focus:border-brand-teal outline-none"
+                          value={editingProduct.sku || ''}
+                          onChange={e => setEditingProduct({...editingProduct, sku: e.target.value.toUpperCase()})}
+                        />
+                      </div>
+                      <div>
+                        <label className="text-[10px] font-black uppercase text-slate-400 mb-1 block">Nombre</label>
+                        <input 
+                          required
+                          className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm focus:border-brand-teal outline-none"
+                          value={editingProduct.name || ''}
+                          onChange={e => setEditingProduct({...editingProduct, name: e.target.value})}
+                        />
+                      </div>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <label className="text-[10px] font-black uppercase text-slate-400 mb-1 block">Precio S/</label>
+                          <input 
+                            type="number"
+                            className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm focus:border-brand-teal outline-none"
+                            value={editingProduct.price || ''}
+                            onChange={e => setEditingProduct({...editingProduct, price: Number(e.target.value)})}
+                          />
+                        </div>
+                        <div>
+                          <label className="text-[10px] font-black uppercase text-slate-400 mb-1 block">Stock</label>
+                          <input 
+                            type="number"
+                            className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm focus:border-brand-teal outline-none"
+                            value={editingProduct.stock || ''}
+                            onChange={e => setEditingProduct({...editingProduct, stock: Number(e.target.value)})}
+                          />
+                        </div>
+                      </div>
+                      <div>
+                        <label className="text-[10px] font-black uppercase text-slate-400 mb-1 block">Foto URL (u opcional)</label>
+                        <input 
+                          className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm focus:border-brand-teal outline-none"
+                          value={editingProduct.imageUrl || ''}
+                          onChange={e => setEditingProduct({...editingProduct, imageUrl: e.target.value})}
+                          placeholder="https://..."
+                        />
+                      </div>
+                      <div>
+                        <label className="text-[10px] font-black uppercase text-slate-400 mb-1 block">Descripción</label>
+                        <textarea 
+                          className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm focus:border-brand-teal outline-none min-h-[80px]"
+                          value={editingProduct.description || ''}
+                          onChange={e => setEditingProduct({...editingProduct, description: e.target.value})}
+                          placeholder="Descripción del producto..."
+                        />
+                      </div>
+                      <div>
+                        <label className="text-[10px] font-black uppercase text-slate-400 mb-1 block">Categoría</label>
+                        <select 
+                          className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm focus:border-brand-teal outline-none capitalize"
+                          value={editingProduct.category || 'libros'}
+                          onChange={e => setEditingProduct({...editingProduct, category: e.target.value})}
+                        >
+                          {categories.map(c => <option key={c} value={c}>{c}</option>)}
+                        </select>
+                      </div>
+
+                      <div className="bg-teal-50/50 p-4 rounded-xl border border-teal-100 space-y-3">
+                        <label className="flex items-center gap-2 cursor-pointer">
+                          <input 
+                            type="checkbox"
+                            className="w-4 h-4 rounded text-brand-teal focus:ring-brand-teal"
+                            checked={editingProduct.isOffer || false}
+                            onChange={e => setEditingProduct({...editingProduct, isOffer: e.target.checked})}
+                          />
+                          <span className="text-xs font-bold text-slate-700 uppercase tracking-wide">Poner en Oferta / Remate</span>
+                        </label>
+                        
+                        {editingProduct.isOffer && (
+                          <motion.div 
+                            initial={{ height: 0, opacity: 0 }}
+                            animate={{ height: 'auto', opacity: 1 }}
+                            className="overflow-hidden"
+                          >
+                            <label className="text-[10px] font-black uppercase text-brand-teal mb-1 block">Precio de Oferta S/</label>
+                            <input 
+                              type="number"
+                              className="w-full bg-white border border-teal-200 rounded-lg px-3 py-2 text-sm focus:border-brand-teal outline-none"
+                              value={editingProduct.offerPrice || ''}
+                              onChange={e => setEditingProduct({...editingProduct, offerPrice: Number(e.target.value)})}
+                              placeholder="0.00"
+                            />
+                          </motion.div>
+                        )}
+                      </div>
+
+                      <button 
+                        disabled={isSaving}
+                        type="submit" 
+                        className="w-full bg-slate-900 text-white py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2 hover:bg-slate-800 transition-all disabled:opacity-50 font-sans"
+                      >
+                        {isSaving ? <Loader2 className="animate-spin" size={16} /> : <Save size={16} />}
+                        {editingProduct.id ? 'Actualizar' : 'Guardar'}
+                      </button>
+                    </form>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+          ) : (
+            <ProductQuoter products={products} />
+          )}
         </div>
 
-        <div className="p-4 bg-slate-900 text-slate-400 flex items-center gap-2">
-          <div className="w-2 h-2 rounded-full bg-brand-green animate-pulse"></div>
-          <span className="text-[10px] font-bold uppercase tracking-widest">Sistema de Gestión Sincronizado v2.0</span>
+        <div className="p-4 bg-slate-900 text-slate-400 flex items-center justify-between gap-2 shrink-0 border-t border-slate-800">
+          <div className="flex items-center gap-2">
+            <div className="w-2 h-2 rounded-full bg-brand-green animate-pulse"></div>
+            <span className="text-[10px] font-bold uppercase tracking-widest">Sistema de Gestión Sincronizado v2.1</span>
+          </div>
+          <span className="text-[9px] text-slate-500 font-bold uppercase select-none">Librería El Estudiante © {new Date().getFullYear()}</span>
         </div>
       </motion.div>
     </div>
   );
+
 };

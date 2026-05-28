@@ -1,0 +1,31 @@
+SKU;Nombre;Autor_Marca;Categoria;Descripcion;Precio_Venta;Precio_Costo;Stock;Stock_Minimo;En_Oferta;Destacado
+L001;El Alquimista;Paulo Coelho;libros;Novela de superacion y reflexion clasica ideal para toda edad;25.00;15.00;20;5;No;Si
+L002;Paco Yunque;Cesar Vallejo;libros;Edicion escolar comentada con guia pedagógica interactiva;12.00;6.50;50;10;No;No
+L003;Tradiciones Peruanas;Ricardo Palma;libros;Cronicas historicas e historietas divertidas del Peru colonial;18.00;10.00;15;4;No;Si
+L004;Sangre de Campeon;Carlos Cuauhtemoc;libros;Libro motivacional enfocado en valores familiares para jovenes;22.00;12.50;30;8;No;Si
+L005;El Caballero Carmelo;Abraham Valdelomar;libros;Cuento clasico de la literatura nacional ilustrado en alta calidad;15.00;8.00;40;10;No;No
+L006;Los Perros Hambrientos;Ciro Alegria;libros;Gran novela indigenista peruana ideal para plan lector de secundaria;20.00;11.00;25;5;No;No
+L007;Diccionario Escolar Ilustrado;Larousse;libros;Diccionario completo con solapas de consulta rapida y graficos;15.00;9.00;60;12;No;Si
+L008;Matematica Corefo 1 Sec;Corefo;libros;Texto escolar de consulta teorico-practico actualizado para el CNB;65.00;45.00;15;3;No;No
+L009;Comunicacion Santillana 2 Sec;Santillana;libros;Libro escolar de comunicacion con actividades y casos de estudio;68.00;48.00;12;3;No;No
+L010;Geometria Preuniversitaria;Lumbreras;libros;Compendio teorico-practico especializado para nivel pre y universitario;35.00;22.00;18;4;No;Si
+U001;Cuaderno Academico Quad A4;Standford;utiles;Cuaderno anillado tapa dura de 100 hojas de 75 gramos cuadriculado;14.50;9.20;120;20;No;Si
+U002;Cuaderno Escolar Quad 100H;Loro;utiles;Cuaderno grapado tradicional cuadriculado con diseno animado variado;5.50;3.20;400;50;No;No
+U003;Lapicero Super Gel Azul X12;Pilot;utiles;Estuche de 12 lapiceros punta fina gel de flujo continuo y secado rapido;48.00;32.00;30;5;No;Si
+U004;Lapicero Trilux Negro X3;Faber-Castell;utiles;Blister de 3 boligrafos de cuerpo triangular ergonomico trazo suave;4.50;2.30;250;45;No;No
+U005;Colores Escolares X24 + Lápiz;Faber-Castell;utiles;Caja de 24 eco-lapices de colores intensos con mina resistente;18.50;11.80;150;25;No;Si
+U006;Plumones Escolares Fiesta X12;Faber-Castell;utiles;Plumones lavables de punta delgada ideales para trabajos escolares;10.50;6.50;180;20;No;No
+U007;Regla Flexible Plastica 30cm;Artesco;utiles;Regla de material irrompible y seguro con escala en cm y pulgadas;2.50;1.10;300;35;No;No
+U008;Goma en Barra Gigante 40g;Glis;utiles;Pegamento limpio y rapido para papel y carton libre de solventes;6.00;3.40;100;15;No;No
+U009;Mochila Porta Notebook 15.6;Artesco;utiles;Mochila impermeable reforzada con multiples bolsillos ergonomicos;95.00;55.00;20;4;Si;Si
+U010;Tijera Escolar Punta Roma 5";Maped;utiles;Tijera comoda con cuchilla de seguridad para cortes limpios;3.80;1.80;140;15;No;No
+T001;Calculadora Cientifica fx-991LAX;Casio;tecnologia;Calculadora de alta resolucion con 552 funciones y menu en espanol;115.00;78.00;25;5;No;Si
+T002;Memoria USB 64GB 3.2;Kingston;tecnologia;Unidad flash ultra compacta carcasa de metal de alta durabilidad;28.00;16.50;80;15;No;Si
+T003;Mouse Optico Inalambrico M170;Logitech;tecnologia;Mouse inalambrico ergonomico con conexion USB estable de 2.4Ghz;38.00;23.00;45;8;No;Si
+T004;Auriculares de Diadema In-Ear;Sony;tecnologia;Auriculares con manos libres y aislamiento de sonido nitido;45.00;27.00;35;6;Si;Si
+T005;Lector de Tarjetas Todo en Uno;Halion;tecnologia;Adaptador de tarjetas SD, MicroSD y Compact Flash por puerto USB;18.00;9.50;40;8;No;No
+T006;Teclado Multimedia USB K120;Logitech;tecnologia;Teclado clasico resistente a salpicaduras con teclas silenciosas;34.00;19.80;25;5;No;No
+T007;Pila Alcalina AA X4;Duracell;tecnologia;Blister de 4 pilas de larga duracion ideales para juguetes y calculadoras;16.00;9.20;120;20;No;No
+T008;Cable HDMI 2.0 4K 1.8M;Halion;tecnologia;Cable de alta velocidad con conectores de oro para audio y video digital;15.00;7.00;60;10;No;No
+T009;Adaptador Cargador USB 2.4A;Maxell;tecnologia;Cargador de pared rapido doble puerto con proteccion termica;22.00;12.00;50;10;No;No
+T010;Tarjeta Memoria MicroSD 128GB;Kingston;tecnologia;Tarjeta de alta velocidad clase 10 con adaptador SD incluido;48.00;29.00;40;8;No;Si

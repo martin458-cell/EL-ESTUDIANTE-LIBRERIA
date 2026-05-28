@@ -119,7 +119,10 @@ Return only a valid JSON response matching the requested schema. Do not write an
 async function startServer() {
   if (process.env.NODE_ENV !== "production") {
     const vite = await createViteServer({
-      server: { middlewareMode: true },
+      server: { 
+        middlewareMode: true,
+        hmr: false // Disable HMR WebSockets to prevent connection errors behind proxy environments
+      },
       appType: "spa",
     });
     app.use(vite.middlewares);

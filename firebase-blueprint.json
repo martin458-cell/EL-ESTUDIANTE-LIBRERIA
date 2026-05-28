@@ -25,6 +25,24 @@
         "email": { "type": "string" },
         "role": { "type": "string", "enum": ["admin"] }
       }
+    },
+    "Supplier": {
+      "title": "Supplier",
+      "description": "Proveedor de material escolar, libros, útiles o tecnología.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string", "description": "Nombre o Razón Social del proveedor" },
+        "ruc": { "type": "string", "description": "RUC en Sunat" },
+        "phone": { "type": "string", "description": "Teléfono de contacto" },
+        "email": { "type": "string", "description": "Correo electrónico de contacto" },
+        "address": { "type": "string", "description": "Dirección física/almacén" },
+        "contactName": { "type": "string", "description": "Nombre de la persona contacto" },
+        "category": { "type": "string", "description": "Categorías que provee (ej: Libros, Útiles)" },
+        "notes": { "type": "string", "description": "Condiciones comerciales, plazos de entrega, etc." },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["name", "phone"]
     }
   },
   "firestore": {
@@ -35,6 +53,10 @@
     "/admins/{userId}": {
       "schema": "Admin",
       "description": "Usuarios con privilegios administrativos."
+    },
+    "/suppliers/{supplierId}": {
+      "schema": "Supplier",
+      "description": "Colección de proveedores y distribuidores."
     }
   }
 }

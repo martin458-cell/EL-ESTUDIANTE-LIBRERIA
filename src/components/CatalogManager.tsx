@@ -1,10 +1,11 @@
 import React, { useState, useRef } from 'react';
-import { Plus, Edit2, Trash2, X, Save, Search, Package, Check, FileDown, UploadCloud, Loader2 } from 'lucide-react';
+import { Plus, Edit2, Trash2, X, Save, Search, Package, Check, FileDown, UploadCloud, Loader2, Briefcase } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Product } from '../hooks/useProducts';
 import { CatalogService } from '../services/catalogService';
 import * as XLSX from 'xlsx';
 import { ProductQuoter } from './ProductQuoter';
+import { SupplierManager } from './SupplierManager';
 
 interface CatalogManagerProps {
   products: Product[];
@@ -12,7 +13,7 @@ interface CatalogManagerProps {
 }
 
 export const CatalogManager: React.FC<CatalogManagerProps> = ({ products, onClose }) => {
-  const [activeTab, setActiveTab] = useState<'catalog' | 'quoter'>('catalog');
+  const [activeTab, setActiveTab] = useState<'catalog' | 'quoter' | 'suppliers'>('catalog');
   const [editingProduct, setEditingProduct] = useState<Partial<Product> | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [isSaving, setIsSaving] = useState(false);
@@ -140,6 +141,18 @@ export const CatalogManager: React.FC<CatalogManagerProps> = ({ products, onClos
             >
               <FileDown size={14} />
               Cotizador PDF
+            </button>
+            <button
+              id="admin-suppliers-tab-button"
+              onClick={() => setActiveTab('suppliers')}
+              className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center gap-2 ${
+                activeTab === 'suppliers'
+                  ? 'bg-slate-900 text-white shadow-md'
+                  : 'text-slate-500 hover:text-slate-800'
+              }`}
+            >
+              <Briefcase size={14} />
+              Proveedores
             </button>
           </div>
 
@@ -331,8 +344,12 @@ export const CatalogManager: React.FC<CatalogManagerProps> = ({ products, onClos
                 )}
               </AnimatePresence>
             </div>
-          ) : (
+          ) : activeTab === 'quoter' ? (
             <ProductQuoter products={products} />
+          ) : (
+            <div className="flex-1 p-6 overflow-hidden flex flex-col bg-slate-50/20">
+              <SupplierManager />
+            </div>
           )}
         </div>
 

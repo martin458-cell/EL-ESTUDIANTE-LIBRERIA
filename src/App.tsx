@@ -52,6 +52,8 @@ export interface SmartSearchConfig {
 
 // --- Components ---
 
+
+
 const ProductDetailModal = ({ product, onClose }: { product: Product, onClose: () => void }) => {
   if (!product) return null;
 
@@ -401,8 +403,8 @@ const LatestNewsCarousel = ({ products }: { products: Product[] }) => {
             />
             <div className="absolute inset-0 bg-gradient-to-t from-slate-900/80 via-transparent to-transparent"></div>
             
-            <div className="absolute top-4 right-4 bg-brand-orange text-white text-[10px] font-black uppercase tracking-widest px-4 py-1.5 rounded-full shadow-lg flex items-center gap-2">
-              <Star size={12} fill="currentColor" /> ¡Recién Llegado!
+            <div className="absolute top-4 right-4 bg-brand-orange text-white text-[10px] font-black uppercase tracking-widest px-4 py-1.5 rounded-full shadow-lg flex items-center gap-2 animate-pulse font-sans">
+              <Star size={12} fill="currentColor" className="text-yellow-350" /> ¡Recién Llegado!
             </div>
 
             <div className="absolute bottom-6 left-6 right-6 text-left">

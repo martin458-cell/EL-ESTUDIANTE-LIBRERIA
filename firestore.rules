@@ -34,6 +34,21 @@ service cloud.firestore {
              (!('updatedAt' in data) || data.updatedAt == request.time || data.updatedAt is timestamp);
     }
 
+    // Validation for Supplier
+    function isValidSupplier(data) {
+      return data.keys().hasAll(['name', 'phone']) &&
+             data.name is string && data.name.size() > 0 && data.name.size() <= 200 &&
+             data.phone is string && data.phone.size() <= 40 &&
+             (!('ruc' in data) || data.ruc is string) &&
+             (!('email' in data) || data.email is string) &&
+             (!('address' in data) || data.address is string) &&
+             (!('contactName' in data) || data.contactName is string) &&
+             (!('category' in data) || data.category is string) &&
+             (!('notes' in data) || data.notes is string) &&
+             (!('createdAt' in data) || data.createdAt == request.time || data.createdAt is timestamp) &&
+             (!('updatedAt' in data) || data.updatedAt == request.time || data.updatedAt is timestamp);
+    }
+
     // --- Collections ---
 
     // Products Collection
@@ -59,6 +74,15 @@ service cloud.firestore {
                     (incoming().role == "admin" || incoming().role == "owner");
                     
       allow write: if isAdmin();
+    }
+
+    // Suppliers Collection
+    match /suppliers/{supplierId} {
+      allow read: if isAdmin();
+      allow create: if isAdmin() && isValidId(supplierId) && isValidSupplier(incoming()) &&
+                    (incoming().createdAt == request.time || incoming().createdAt is timestamp);
+      allow update: if isAdmin() && isValidSupplier(incoming());
+      allow delete: if isAdmin();
     }
   }
 }

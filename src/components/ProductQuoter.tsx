@@ -3,6 +3,8 @@ import { Search, Plus, Minus, Trash2, FileDown, BookOpen, PenTool, Monitor, User
 import { motion, AnimatePresence } from 'motion/react';
 import { Product } from '../hooks/useProducts';
 import { jsPDF } from 'jspdf';
+import { useClients } from '../hooks/useClients';
+import { ClientService } from '../services/clientService';
 
 interface QuotedItem {
   product: Product;
@@ -72,11 +74,33 @@ export const ProductQuoter: React.FC<ProductQuoterProps> = ({ products }) => {
   const [activeTab, setActiveTab] = useState<'catalog' | 'history'>('catalog');
   const [historySearchTerm, setHistorySearchTerm] = useState('');
 
-  // Extract list of unique frequent clients from historical quotes for quick select
+  const { clients: dbClients } = useClients();
+
+  // Extract list of unique frequent clients from both database and historical quotes for quick select
   const uniqueClients = useMemo(() => {
     const seen = new Set<string>();
     const clients: Array<{ name: string; doc: string; address: string; phone: string }> = [];
     
+    // First, add all persistent database clients so they are prioritized!
+    dbClients.forEach(c => {
+      const trimmedName = c.name?.trim();
+      const trimmedDoc = c.doc?.trim() || '';
+      if (!trimmedName || trimmedName.toLowerCase() === 'público en general' || trimmedName.toLowerCase() === 'publico en general') {
+        return;
+      }
+      const key = `${trimmedName.toLowerCase()}_${trimmedDoc.toLowerCase()}`;
+      if (!seen.has(key)) {
+        seen.add(key);
+        clients.push({
+          name: trimmedName,
+          doc: trimmedDoc,
+          address: c.address?.trim() || '',
+          phone: c.phone?.trim() || ''
+        });
+      }
+    });
+
+    // Then, fill in from historical quotes for missing ones
     savedQuotes.forEach(q => {
       const trimmedName = q.clientName?.trim();
       const trimmedDoc = q.clientDoc?.trim() || '';
@@ -95,7 +119,7 @@ export const ProductQuoter: React.FC<ProductQuoterProps> = ({ products }) => {
       }
     });
     return clients;
-  }, [savedQuotes]);
+  }, [dbClients, savedQuotes]);
 
   // Save Quotation Function
   const handleSaveQuotation = (customNumber?: string, isSilent = false) => {
@@ -129,6 +153,18 @@ export const ProductQuoter: React.FC<ProductQuoterProps> = ({ products }) => {
       localStorage.setItem('el_estudiante_historical_quotes', JSON.stringify(updated));
       return updated;
     });
+
+    // Auto-register/update the client data in global database (Firestore)
+    if (clientName && clientName.trim() !== '' && clientName.trim().toLowerCase() !== 'pasajero' && clientName.trim().toLowerCase() !== 'público en general' && clientName.trim().toLowerCase() !== 'publico en general') {
+      ClientService.upsertClientFromQuote({
+        name: clientName.trim(),
+        doc: clientDoc.trim(),
+        phone: clientPhone.trim(),
+        address: clientAddress.trim()
+      }).catch(err => {
+        console.error("Failed to auto-save client from proforma", err);
+      });
+    }
 
     if (!isSilent) {
       alert(`Cotización ${activeNum} guardada en el historial.`);

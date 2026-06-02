@@ -43,6 +43,38 @@
         "updatedAt": { "type": "string", "format": "date-time" }
       },
       "required": ["name", "phone"]
+    },
+    "Client": {
+      "title": "Client",
+      "description": "Cliente registrado o capturado automáticamente durante cotizaciones.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string", "description": "Nombre o Razón Social del cliente" },
+        "doc": { "type": "string", "description": "DNI o RUC del cliente" },
+        "phone": { "type": "string", "description": "Teléfono de contacto" },
+        "address": { "type": "string", "description": "Dirección física" },
+        "email": { "type": "string", "description": "Correo electrónico" },
+        "notes": { "type": "string", "description": "Notas adicionales del cliente" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["name"]
+    },
+    "PurchaseOrder": {
+      "title": "PurchaseOrder",
+      "description": "Pedido de compra para consolidar órdenes de múltiples productos a proveedores.",
+      "type": "object",
+      "properties": {
+        "supplierId": { "type": "string", "description": "ID del proveedor" },
+        "supplierName": { "type": "string", "description": "Nombre del proveedor" },
+        "status": { "type": "string", "enum": ["borrador", "enviado", "recibido"], "description": "Estado del pedido" },
+        "items": { "type": "array", "description": "Lista de productos ingresados" },
+        "notes": { "type": "string", "description": "Notas o condiciones" },
+        "freightCost": { "type": "number", "description": "Costo de flete/transporte" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["supplierId", "supplierName", "status", "items"]
     }
   },
   "firestore": {
@@ -57,6 +89,14 @@
     "/suppliers/{supplierId}": {
       "schema": "Supplier",
       "description": "Colección de proveedores y distribuidores."
+    },
+    "/clients/{clientId}": {
+      "schema": "Client",
+      "description": "Colección global de clientes o postulantes que solicitaron cotizaciones."
+    },
+    "/purchase_orders/{orderId}": {
+      "schema": "PurchaseOrder",
+      "description": "Colección de pedidos de compra consolidados para reposición."
     }
   }
 }

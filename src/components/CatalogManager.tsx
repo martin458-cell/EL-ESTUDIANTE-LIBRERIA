@@ -1,11 +1,13 @@
 import React, { useState, useRef } from 'react';
-import { Plus, Edit2, Trash2, X, Save, Search, Package, Check, FileDown, UploadCloud, Loader2, Briefcase } from 'lucide-react';
+import { Plus, Edit2, Trash2, X, Save, Search, Package, Check, FileDown, UploadCloud, Loader2, Briefcase, Users, Truck } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Product } from '../hooks/useProducts';
 import { CatalogService } from '../services/catalogService';
 import * as XLSX from 'xlsx';
 import { ProductQuoter } from './ProductQuoter';
 import { SupplierManager } from './SupplierManager';
+import { ClientManager } from './ClientManager';
+import { PurchaseOrderManager } from './PurchaseOrderManager';
 
 interface CatalogManagerProps {
   products: Product[];
@@ -13,7 +15,7 @@ interface CatalogManagerProps {
 }
 
 export const CatalogManager: React.FC<CatalogManagerProps> = ({ products, onClose }) => {
-  const [activeTab, setActiveTab] = useState<'catalog' | 'quoter' | 'suppliers'>('catalog');
+  const [activeTab, setActiveTab] = useState<'catalog' | 'quoter' | 'suppliers' | 'clients' | 'purchaseOrders'>('catalog');
   const [editingProduct, setEditingProduct] = useState<Partial<Product> | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [isSaving, setIsSaving] = useState(false);
@@ -102,11 +104,11 @@ export const CatalogManager: React.FC<CatalogManagerProps> = ({ products, onClos
       <motion.div 
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="bg-white w-full max-w-5xl max-h-[90vh] md:max-h-[85vh] rounded-3xl shadow-2xl flex flex-col overflow-hidden transition-all duration-300"
+        className="bg-white w-full max-w-7xl lg:max-w-[94%] max-h-[95vh] md:max-h-[92vh] rounded-3xl shadow-2xl flex flex-col overflow-hidden transition-all duration-300"
       >
         {/* Header */}
         <div className="p-6 border-b border-slate-100 flex flex-col sm:flex-row justify-between sm:items-center gap-4 bg-slate-50/50">
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 shrink-0">
             <div className="w-10 h-10 bg-brand-teal text-white rounded-xl flex items-center justify-center">
               <Package size={24} />
             </div>
@@ -117,11 +119,11 @@ export const CatalogManager: React.FC<CatalogManagerProps> = ({ products, onClos
           </div>
 
           {/* TAB SELECTOR */}
-          <div className="flex bg-slate-100 p-1.5 rounded-2xl border border-slate-200">
+          <div className="flex bg-slate-100 p-1.5 rounded-2xl border border-slate-200 overflow-x-auto whitespace-nowrap scrollbar-none shrink-0 md:max-w-none">
             <button
               id="admin-catalog-tab-button"
               onClick={() => setActiveTab('catalog')}
-              className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center gap-2 ${
+              className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center gap-2 shrink-0 ${
                 activeTab === 'catalog'
                   ? 'bg-slate-900 text-white shadow-md'
                   : 'text-slate-500 hover:text-slate-800'
@@ -133,7 +135,7 @@ export const CatalogManager: React.FC<CatalogManagerProps> = ({ products, onClos
             <button
               id="admin-quoter-tab-button"
               onClick={() => setActiveTab('quoter')}
-              className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center gap-2 ${
+              className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center gap-2 shrink-0 ${
                 activeTab === 'quoter'
                   ? 'bg-slate-900 text-white shadow-md'
                   : 'text-slate-500 hover:text-slate-800'
@@ -145,7 +147,7 @@ export const CatalogManager: React.FC<CatalogManagerProps> = ({ products, onClos
             <button
               id="admin-suppliers-tab-button"
               onClick={() => setActiveTab('suppliers')}
-              className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center gap-2 ${
+              className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center gap-2 shrink-0 ${
                 activeTab === 'suppliers'
                   ? 'bg-slate-900 text-white shadow-md'
                   : 'text-slate-500 hover:text-slate-800'
@@ -154,9 +156,33 @@ export const CatalogManager: React.FC<CatalogManagerProps> = ({ products, onClos
               <Briefcase size={14} />
               Proveedores
             </button>
+            <button
+              id="admin-clients-tab-button"
+              onClick={() => setActiveTab('clients')}
+              className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center gap-2 shrink-0 ${
+                activeTab === 'clients'
+                  ? 'bg-slate-900 text-white shadow-md'
+                  : 'text-slate-500 hover:text-slate-800'
+              }`}
+            >
+              <Users size={14} />
+              Clientes
+            </button>
+            <button
+              id="admin-procurements-tab-button"
+              onClick={() => setActiveTab('purchaseOrders')}
+              className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center gap-2 shrink-0 ${
+                activeTab === 'purchaseOrders'
+                  ? 'bg-slate-900 text-white shadow-md'
+                  : 'text-slate-500 hover:text-slate-800'
+              }`}
+            >
+              <Truck size={14} />
+              Pedidos de Compra
+            </button>
           </div>
 
-          <button onClick={onClose} className="p-2 hover:bg-slate-200 rounded-full transition-colors self-end sm:self-auto">
+          <button onClick={onClose} className="p-2 hover:bg-slate-200 rounded-full transition-colors self-end sm:self-auto shrink-0">
             <X size={20} />
           </button>
         </div>
@@ -346,10 +372,16 @@ export const CatalogManager: React.FC<CatalogManagerProps> = ({ products, onClos
             </div>
           ) : activeTab === 'quoter' ? (
             <ProductQuoter products={products} />
-          ) : (
+          ) : activeTab === 'suppliers' ? (
             <div className="flex-1 p-6 overflow-hidden flex flex-col bg-slate-50/20">
               <SupplierManager />
             </div>
+          ) : activeTab === 'clients' ? (
+            <div className="flex-1 p-6 overflow-hidden flex flex-col bg-slate-50/20">
+              <ClientManager />
+            </div>
+          ) : (
+            <PurchaseOrderManager />
           )}
         </div>
 

@@ -49,6 +49,32 @@ service cloud.firestore {
              (!('updatedAt' in data) || data.updatedAt == request.time || data.updatedAt is timestamp);
     }
 
+    // Validation for Client
+    function isValidClient(data) {
+      return data.keys().hasAll(['name']) &&
+             data.name is string && data.name.size() > 0 && data.name.size() <= 200 &&
+             (!('doc' in data) || data.doc is string) &&
+             (!('phone' in data) || data.phone is string) &&
+             (!('address' in data) || data.address is string) &&
+             (!('email' in data) || data.email is string) &&
+             (!('notes' in data) || data.notes is string) &&
+             (!('createdAt' in data) || data.createdAt == request.time || data.createdAt is timestamp) &&
+             (!('updatedAt' in data) || data.updatedAt == request.time || data.updatedAt is timestamp);
+    }
+
+    // Validation for PurchaseOrder
+    function isValidPurchaseOrder(data) {
+      return data.keys().hasAll(['supplierId', 'supplierName', 'status', 'items']) &&
+             data.supplierId is string && data.supplierId.size() > 0 && data.supplierId.size() <= 128 &&
+             data.supplierName is string && data.supplierName.size() > 0 && data.supplierName.size() <= 500 &&
+             data.status is string && (data.status == 'borrador' || data.status == 'enviado' || data.status == 'recibido') &&
+             data.items is list &&
+             (!('notes' in data) || data.notes is string) &&
+             (!('freightCost' in data) || data.freightCost is number) &&
+             (!('createdAt' in data) || data.createdAt == request.time || data.createdAt is timestamp) &&
+             (!('updatedAt' in data) || data.updatedAt == request.time || data.updatedAt is timestamp);
+    }
+
     // --- Collections ---
 
     // Products Collection
@@ -82,6 +108,24 @@ service cloud.firestore {
       allow create: if isAdmin() && isValidId(supplierId) && isValidSupplier(incoming()) &&
                     (incoming().createdAt == request.time || incoming().createdAt is timestamp);
       allow update: if isAdmin() && isValidSupplier(incoming());
+      allow delete: if isAdmin();
+    }
+
+    // Clients Collection
+    match /clients/{clientId} {
+      allow read: if isAdmin();
+      allow create: if isAdmin() && isValidId(clientId) && isValidClient(incoming()) &&
+                    (incoming().createdAt == request.time || incoming().createdAt is timestamp);
+      allow update: if isAdmin() && isValidClient(incoming());
+      allow delete: if isAdmin();
+    }
+
+    // Purchase Orders Collection
+    match /purchase_orders/{orderId} {
+      allow read: if isAdmin();
+      allow create: if isAdmin() && isValidId(orderId) && isValidPurchaseOrder(incoming()) &&
+                    (incoming().createdAt == request.time || incoming().createdAt is timestamp);
+      allow update: if isAdmin() && isValidPurchaseOrder(incoming());
       allow delete: if isAdmin();
     }
   }

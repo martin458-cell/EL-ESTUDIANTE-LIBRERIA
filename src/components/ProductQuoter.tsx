@@ -5,6 +5,7 @@ import { Product } from '../hooks/useProducts';
 import { jsPDF } from 'jspdf';
 import { useClients } from '../hooks/useClients';
 import { ClientService } from '../services/clientService';
+import { normalizeProductImageUrl, handleImageError } from '../utils/imageUtils';
 
 interface QuotedItem {
   product: Product;
@@ -295,8 +296,10 @@ export const ProductQuoter: React.FC<ProductQuoterProps> = ({ products }) => {
             : item
         );
       }
-      // Product price fallback to promo/offer price if valid
-      const initialPrice = product.isOffer && product.offerPrice ? product.offerPrice : product.price;
+      // Product price fallback to promo/offer price if valid and not expired
+      const todayStr = new Date().toISOString().split('T')[0];
+      const isExpired = product.isOffer && product.offerExpiryDate ? product.offerExpiryDate < todayStr : false;
+      const initialPrice = product.isOffer && product.offerPrice && !isExpired ? product.offerPrice : product.price;
       return [...prevCart, { product, quantity: 1, customPrice: initialPrice }];
     });
   };
@@ -941,7 +944,9 @@ export const ProductQuoter: React.FC<ProductQuoterProps> = ({ products }) => {
                 </div>
               ) : (
                 filteredProducts.map((p) => {
-                  const hasOffer = p.isOffer && p.offerPrice;
+                  const todayStr = new Date().toISOString().split('T')[0];
+                  const isExpired = p.isOffer && p.offerExpiryDate ? p.offerExpiryDate < todayStr : false;
+                  const hasOffer = p.isOffer && p.offerPrice && !isExpired;
                   const cartItem = cart.find(item => item.product.id === p.id);
                   const isInCart = !!cartItem;
                   
@@ -959,7 +964,13 @@ export const ProductQuoter: React.FC<ProductQuoterProps> = ({ products }) => {
                       <div className="flex items-center gap-2.5 overflow-hidden">
                         <div className="w-9 h-9 rounded-xl bg-slate-50 flex items-center justify-center shrink-0 overflow-hidden relative border border-slate-100">
                           {p.imageUrl ? (
-                            <img src={p.imageUrl} alt="" className="w-full h-full object-contain p-1" referrerPolicy="no-referrer" />
+                            <img 
+                              src={normalizeProductImageUrl(p.imageUrl, p.category, p.id)} 
+                              alt="" 
+                              className="w-full h-full object-contain p-1" 
+                              referrerPolicy="no-referrer" 
+                              onError={(e) => handleImageError(e, p.category, p.id)}
+                            />
                           ) : (
                             renderCategoryIcon(p.category)
                           )}

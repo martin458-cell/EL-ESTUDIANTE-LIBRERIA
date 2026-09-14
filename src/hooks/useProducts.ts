@@ -17,6 +17,7 @@ export interface Product {
   featured: boolean;    // Si es destacado o novedad
   isOffer?: boolean;    // Si está en oferta/remate
   offerPrice?: number;  // Precio en oferta
+  offerExpiryDate?: string; // Fecha de vencimiento de la oferta format: YYYY-MM-DD
   createdAt?: any;
   updatedAt?: any;
 }

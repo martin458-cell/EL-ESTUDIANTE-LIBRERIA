@@ -8,7 +8,12 @@ service cloud.firestore {
 
     // --- Helpers ---
     function isSignedIn() { return request.auth != null; }
-    function isAdmin() { return isSignedIn() && exists(/databases/$(database)/documents/admins/$(request.auth.uid)); }
+    function isAdmin() { 
+      return isSignedIn() && (
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid)) ||
+        request.auth.token.email.lower() == "martinherickcahuanamendoza@gmail.com"
+      );
+    }
     function incoming() { return request.resource.data; }
     function existing() { return resource.data; }
     function isValidId(id) { return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$'); }
@@ -25,6 +30,16 @@ service cloud.firestore {
              (!('tag' in data) || (data.tag is string && data.tag.size() <= 50)) &&
              (!('createdAt' in data) || data.createdAt == request.time) &&
              (!('updatedAt' in data) || data.updatedAt == request.time);
+    }
+
+    // Validation for Debtor
+    function isValidDebtor(data) {
+      return data.keys().hasAll(['apellidosNombres', 'fecha', 'producto', 'precio', 'estado']) &&
+             data.apellidosNombres is string && data.apellidosNombres.size() > 0 && data.apellidosNombres.size() <= 300 &&
+             data.fecha is string && data.fecha.size() <= 50 &&
+             data.producto is string && data.producto.size() > 0 && data.producto.size() <= 500 &&
+             data.precio is number && data.precio >= 0 &&
+             data.estado is string && (data.estado == 'Pendiente' || data.estado == 'Pagado' || data.estado == 'Vencido');
     }
 
     // --- Collections ---
@@ -52,12 +67,20 @@ service cloud.firestore {
       // Initially, we might need a way to bootstrap an admin.
       // We check if the email matches the owner's email for the very first admin.
       allow create: if isSignedIn() && 
-                    request.auth.token.email == "martinherickcahuanamendoza@gmail.com" &&
-                    request.auth.token.email_verified == true &&
+                    (request.auth.token.email == "martinherickcahuanamendoza@gmail.com" || request.auth.token.email.lower() == "martinherickcahuanamendoza@gmail.com") &&
                     incoming().email == request.auth.token.email &&
-                    incoming().role == "admin";
+                    (incoming().role == "admin" || incoming().role == "owner");
                     
       allow write: if isAdmin(); // Existing admins can manage other admins
+    }
+
+    // Debtors Collection
+    match /debtors/{debtorId} {
+      allow read: if isAdmin();
+      allow create: if isAdmin() && isValidId(debtorId) && isValidDebtor(incoming()) &&
+                    (incoming().createdAt == request.time || incoming().createdAt is timestamp);
+      allow update: if isAdmin() && isValidDebtor(incoming());
+      allow delete: if isAdmin();
     }
   }
 }

@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { 
   BookOpen, 
   PenTool, 
@@ -30,12 +30,17 @@ import {
   Menu,
   ChevronLeft,
   Calendar,
-  Sparkles
+  Sparkles,
+  Camera,
+  Download,
+  Check
 } from 'lucide-react';
+import { toPng } from 'html-to-image';
 import { motion, AnimatePresence } from 'motion/react';
 import { onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
 import { auth, db, loginWithGoogle, logout } from './lib/firebase';
 import { useProducts, Product } from './hooks/useProducts';
+import { normalizeProductImageUrl, handleImageError } from './utils/imageUtils';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { CatalogManager } from './components/CatalogManager';
 
@@ -55,7 +60,53 @@ export interface SmartSearchConfig {
 
 
 const ProductDetailModal = ({ product, onClose }: { product: Product, onClose: () => void }) => {
+  const modalCardRef = useRef<HTMLDivElement>(null);
+  const [isCapturing, setIsCapturing] = useState(false);
+  const [captureSuccess, setCaptureSuccess] = useState(false);
+
   if (!product) return null;
+
+  const handleCaptureImage = async () => {
+    if (!modalCardRef.current || isCapturing) return;
+    setIsCapturing(true);
+    setCaptureSuccess(false);
+
+    try {
+      // Allow DOM to settle
+      await new Promise((r) => setTimeout(r, 100));
+
+      const dataUrl = await toPng(modalCardRef.current, {
+        cacheBust: true,
+        pixelRatio: 2,
+        backgroundColor: '#ffffff',
+        filter: (node: any) => {
+          if (node?.classList && typeof node.classList.contains === 'function') {
+            return !node.classList.contains('no-capture');
+          }
+          return true;
+        }
+      });
+
+      const cleanSku = (product.sku || 'PROD').replace(/[^a-zA-Z0-9_-]/g, '_');
+      const cleanName = (product.name || 'detalle').substring(0, 30).replace(/[^a-zA-Z0-9_-]/g, '_');
+      const fileName = `Producto_${cleanSku}_${cleanName}.png`;
+
+      const link = document.createElement('a');
+      link.download = fileName;
+      link.href = dataUrl;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      setCaptureSuccess(true);
+      setTimeout(() => setCaptureSuccess(false), 3000);
+    } catch (err) {
+      console.error('Error al capturar imagen del producto:', err);
+      alert('No se pudo generar la imagen del producto. Por favor intenta de nuevo.');
+    } finally {
+      setIsCapturing(false);
+    }
+  };
 
   return (
     <motion.div 
@@ -66,95 +117,151 @@ const ProductDetailModal = ({ product, onClose }: { product: Product, onClose: (
       onClick={onClose}
     >
       <motion.div 
+        ref={modalCardRef}
         initial={{ scale: 0.9, y: 20, opacity: 0 }}
         animate={{ scale: 1, y: 0, opacity: 1 }}
         exit={{ scale: 0.9, y: 20, opacity: 0 }}
-        className="bg-white w-full max-w-4xl rounded-[2rem] sm:rounded-[2.5rem] shadow-2xl overflow-hidden flex flex-col md:flex-row relative max-h-[92vh] sm:max-h-[85vh] md:max-h-none overflow-y-auto md:overflow-visible"
+        className="bg-white w-full max-w-4xl rounded-[2rem] sm:rounded-[2.5rem] shadow-2xl overflow-hidden flex flex-col md:flex-row relative max-h-[92vh] sm:max-h-[85vh] md:max-h-none overflow-y-auto md:overflow-visible border border-slate-100"
         onClick={(e) => e.stopPropagation()}
       >
-        <button 
-          onClick={onClose}
-          className="absolute top-4 right-4 sm:top-6 sm:right-6 z-30 p-2.5 bg-white shadow-xl rounded-full text-slate-800 border border-slate-100 hover:bg-slate-50 transition-all active:scale-90"
-          aria-label="Cerrar"
-        >
-          <X size={20} />
-        </button>
+        {/* Floating action buttons in top-right */}
+        <div className="absolute top-4 right-4 sm:top-6 sm:right-6 z-30 flex items-center gap-2 no-capture">
+          <button 
+            onClick={handleCaptureImage}
+            disabled={isCapturing}
+            className={`p-2.5 rounded-full shadow-xl border transition-all active:scale-90 flex items-center gap-1.5 px-3.5 font-bold text-xs ${
+              captureSuccess 
+                ? 'bg-emerald-500 text-white border-emerald-600' 
+                : 'bg-white text-slate-800 border-slate-100 hover:bg-slate-50 hover:text-brand-teal'
+            }`}
+            title="Descargar esta ficha como imagen PNG"
+            aria-label="Descargar imagen"
+          >
+            {isCapturing ? (
+              <>
+                <Loader2 size={16} className="animate-spin text-brand-teal" />
+                <span className="hidden sm:inline text-[11px]">Capturando...</span>
+              </>
+            ) : captureSuccess ? (
+              <>
+                <Check size={16} />
+                <span className="text-[11px]">¡Descargada!</span>
+              </>
+            ) : (
+              <>
+                <Camera size={16} />
+                <span className="hidden sm:inline text-[11px]">Descargar Imagen</span>
+              </>
+            )}
+          </button>
+
+          <button 
+            onClick={onClose}
+            className="p-2.5 bg-white shadow-xl rounded-full text-slate-800 border border-slate-100 hover:bg-slate-50 transition-all active:scale-90"
+            aria-label="Cerrar"
+          >
+            <X size={20} />
+          </button>
+        </div>
 
         {/* Image Preview */}
-        <div className="md:w-1/2 bg-slate-50 aspect-square md:aspect-auto relative overflow-hidden shrink-0">
+        <div className="md:w-1/2 bg-slate-50 aspect-square md:aspect-auto relative overflow-hidden shrink-0 flex items-center justify-center p-6">
           <img 
-            src={product.imageUrl || `https://picsum.photos/seed/${product.id}/600/600`} 
+            src={normalizeProductImageUrl(product.imageUrl, product.category, product.id)} 
             alt={product.name} 
-            className="w-full h-full object-contain p-4"
+            className="w-full h-full object-contain max-h-[380px]"
             referrerPolicy="no-referrer"
+            onError={(e) => handleImageError(e, product.category, product.id)}
           />
           {product.featured && (
             <div className="absolute top-4 left-4 sm:top-6 sm:left-6 bg-yellow-400 text-slate-900 text-[9px] sm:text-[10px] font-black uppercase tracking-widest px-3 sm:px-4 py-1.5 rounded-full shadow-lg flex items-center gap-2 border border-yellow-500">
               <Star size={10} fill="currentColor" /> Novedad
             </div>
           )}
+
+          {/* Watermark in captured image */}
+          <div className="absolute bottom-3 left-4 flex items-center gap-1.5 text-slate-400 text-[10px] font-bold">
+            <span className="w-1.5 h-1.5 rounded-full bg-brand-teal inline-block"></span>
+            Librería "El Estudiante"
+          </div>
         </div>
 
         {/* Content */}
-        <div className="md:w-1/2 p-6 sm:p-8 md:p-12 flex flex-col bg-white min-h-0 overflow-y-auto">
+        <div className="md:w-1/2 p-6 sm:p-8 md:p-10 flex flex-col bg-white min-h-0 overflow-y-auto">
           <div className="flex-1">
-            <div className="mb-6">
+            <div className="mb-5">
               <span className="inline-block px-3 py-1 rounded-full bg-teal-50 text-brand-teal text-[9px] sm:text-[10px] font-black uppercase tracking-widest border border-teal-100 mb-2">
                 {product.category}
               </span>
               <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">SKU: {product.sku}</p>
-              <h2 className="text-2xl sm:text-3xl font-display font-bold text-slate-900 leading-tight mb-2">
+              <h2 className="text-xl sm:text-2xl lg:text-3xl font-display font-bold text-slate-900 leading-tight mb-2">
                 {product.name}
               </h2>
               {product.authorOrBrand && (
-                <p className="text-base text-slate-500 font-medium">Por: <span className="text-slate-800 font-bold">{product.authorOrBrand}</span></p>
+                <p className="text-sm sm:text-base text-slate-500 font-medium">Por: <span className="text-slate-800 font-bold">{product.authorOrBrand}</span></p>
               )}
             </div>
 
-            <div className="space-y-4 mb-8 pt-4 border-t border-slate-50">
+            <div className="space-y-4 mb-6 pt-4 border-t border-slate-100">
               {product.description && (
                 <div>
                   <h4 className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2">Descripción del Producto</h4>
-                  <div className="text-sm sm:text-base text-slate-600 leading-relaxed max-h-48 overflow-y-auto pr-2 custom-scrollbar">
+                  <div className="text-xs sm:text-sm text-slate-600 leading-relaxed max-h-36 overflow-y-auto pr-2 custom-scrollbar">
                     {product.description}
                   </div>
                 </div>
               )}
               
-              <div className="grid grid-cols-2 gap-4">
-                <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100">
+              <div>
+                <div className="bg-slate-50 p-3 sm:p-4 rounded-2xl border border-slate-100">
                   <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">Disponibilidad</p>
                   <p className={`font-bold text-xs sm:text-sm ${product.stock > 0 ? 'text-green-600' : 'text-red-500'}`}>
-                    {product.stock > 0 ? `${product.stock} unidades` : 'Agotado'}
+                    {product.stock > 0 ? `${product.stock} unidades disponibles` : 'Agotado'}
                   </p>
-                </div>
-                <div>
-                  <h4 className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">Estado</h4>
-                  <p className="text-xs sm:text-sm font-bold text-slate-700">Producto Original</p>
                 </div>
               </div>
             </div>
           </div>
 
-          <div className="mt-auto pt-6 border-t border-slate-50 flex flex-col sm:flex-row items-center gap-4 sm:gap-6">
-            <div className="text-left w-full sm:w-auto">
-              <p className="text-[9px] sm:text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Precio Sugerido</p>
-              <p className="text-2xl sm:text-3xl font-display font-bold text-brand-orange">
-                {product.price.toLocaleString('es-PE', { style: 'currency', currency: 'PEN' })}
-              </p>
+          <div className="mt-auto pt-5 border-t border-slate-100 flex flex-col gap-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-[9px] sm:text-[10px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Precio Sugerido</p>
+                <p className="text-2xl sm:text-3xl font-display font-bold text-brand-orange">
+                  {product.price.toLocaleString('es-PE', { style: 'currency', currency: 'PEN' })}
+                </p>
+              </div>
+              
+              {/* Secondary download image button in footer */}
+              <button
+                onClick={handleCaptureImage}
+                disabled={isCapturing}
+                className="no-capture flex items-center gap-2 bg-slate-100 hover:bg-slate-200 text-slate-700 px-4 py-2.5 rounded-xl font-bold text-xs transition-all active:scale-95 border border-slate-200"
+                title="Descargar como imagen"
+              >
+                {isCapturing ? (
+                  <Loader2 size={15} className="animate-spin text-brand-teal" />
+                ) : captureSuccess ? (
+                  <Check size={15} className="text-emerald-600" />
+                ) : (
+                  <Download size={15} />
+                )}
+                <span>{captureSuccess ? '¡Guardada!' : 'Descargar Foto'}</span>
+              </button>
             </div>
-            <div className="flex flex-col sm:flex-row gap-3 w-full sm:flex-1">
+
+            <div className="flex flex-col sm:flex-row gap-2.5 w-full no-capture">
               <a 
                 href={`https://wa.me/51953366458?text=Hola,%20me%20interesa%20el%20producto:%20${product.name}%20(SKU:%20${product.sku})`}
                 target="_blank"
                 rel="noreferrer"
-                className="flex-[2] bg-slate-900 text-white py-4 rounded-2xl font-bold flex items-center justify-center gap-3 hover:bg-slate-800 transition-all shadow-xl hover:-translate-y-1"
+                className="flex-[2] bg-slate-900 text-white py-3 sm:py-3.5 rounded-2xl font-bold flex items-center justify-center gap-2.5 hover:bg-slate-800 transition-all shadow-lg hover:-translate-y-0.5 text-sm"
               >
-                <Smartphone size={20} /> Solicitar WhatsApp
+                <Smartphone size={18} /> Solicitar WhatsApp
               </a>
               <button 
                 onClick={onClose}
-                className="flex-1 bg-slate-100 text-slate-600 py-4 rounded-2xl font-bold text-sm hover:bg-slate-200 transition-all sm:hidden"
+                className="flex-1 bg-slate-100 text-slate-600 py-3 sm:py-3.5 rounded-2xl font-bold text-xs sm:text-sm hover:bg-slate-200 transition-all sm:hidden"
               >
                 Cerrar
               </button>
@@ -396,10 +503,11 @@ const LatestNewsCarousel = ({ products }: { products: Product[] }) => {
         >
           <div className="relative aspect-[4/3] overflow-hidden rounded-[2rem] bg-slate-50">
             <img 
-              src={current.imageUrl || `https://picsum.photos/seed/${current.id}/800/600`} 
+              src={normalizeProductImageUrl(current.imageUrl, current.category, current.id)} 
               alt={current.name} 
               className="w-full h-full object-contain p-6"
               referrerPolicy="no-referrer"
+              onError={(e) => handleImageError(e, current.category, current.id)}
             />
             <div className="absolute inset-0 bg-gradient-to-t from-slate-900/80 via-transparent to-transparent"></div>
             
@@ -827,10 +935,11 @@ const ProductCatalog = ({
                   >
                     <div className="relative aspect-square overflow-hidden bg-slate-50">
                       <img 
-                        src={product.imageUrl || `https://picsum.photos/seed/${product.id}/400/400`} 
+                        src={normalizeProductImageUrl(product.imageUrl, product.category, product.id)} 
                         alt={product.name} 
                         className="w-full h-full object-contain p-4 transition-transform duration-700 group-hover:scale-105"
                         referrerPolicy="no-referrer"
+                        onError={(e) => handleImageError(e, product.category, product.id)}
                       />
                       <div className="absolute top-3 left-3 flex flex-col gap-1.5">
                         {product.featured && (
@@ -1010,7 +1119,8 @@ const StaticMap = () => {
 };
 
 const OffersPreview = ({ products, onSeeMore }: { products: Product[], onSeeMore: () => void }) => {
-  const offerProducts = products.filter(p => p.isOffer).slice(0, 4);
+  const todayStr = new Date().toISOString().split('T')[0];
+  const offerProducts = products.filter(p => p.isOffer && (!p.offerExpiryDate || p.offerExpiryDate >= todayStr)).slice(0, 4);
 
   if (offerProducts.length === 0) return null;
 
@@ -1037,19 +1147,33 @@ const OffersPreview = ({ products, onSeeMore }: { products: Product[], onSeeMore
             <motion.div 
               key={p.id}
               whileHover={{ y: -5 }}
-              className="bg-white p-4 rounded-3xl shadow-lg border border-brand-orange/10 relative overflow-hidden group"
+              className="bg-white p-4 rounded-3xl shadow-lg border border-brand-orange/10 relative overflow-hidden group flex flex-col justify-between"
             >
-              <div className="aspect-square rounded-2xl overflow-hidden bg-slate-50 mb-4 relative">
-                <img src={p.imageUrl} alt={p.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" referrerPolicy="no-referrer" />
-                <div className="absolute top-2 right-2 bg-brand-orange text-white text-[9px] font-black px-2 py-1 rounded-lg">
-                  -{Math.round((1 - (p.offerPrice || 0) / p.price) * 100)}%
+              <div>
+                <div className="aspect-square rounded-2xl overflow-hidden bg-slate-50 mb-4 relative">
+                  <img 
+                    src={normalizeProductImageUrl(p.imageUrl, p.category, p.id)} 
+                    alt={p.name} 
+                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" 
+                    referrerPolicy="no-referrer" 
+                    onError={(e) => handleImageError(e, p.category, p.id)}
+                  />
+                  <div className="absolute top-2 right-2 bg-brand-orange text-white text-[9px] font-black px-2 py-1 rounded-lg">
+                    -{Math.round((1 - (p.offerPrice || 0) / p.price) * 100)}%
+                  </div>
+                </div>
+                <h4 className="font-bold text-slate-800 text-sm truncate mb-1">{p.name}</h4>
+                <div className="flex items-center gap-2">
+                  <span className="text-brand-orange font-black text-lg">S/ {p.offerPrice}</span>
+                  <span className="text-slate-400 text-xs line-through italic text-[10px]">S/ {p.price}</span>
                 </div>
               </div>
-              <h4 className="font-bold text-slate-800 text-sm truncate mb-1">{p.name}</h4>
-              <div className="flex items-center gap-2">
-                <span className="text-brand-orange font-black text-lg">S/ {p.offerPrice}</span>
-                <span className="text-slate-400 text-xs line-through italic text-[10px]">S/ {p.price}</span>
-              </div>
+              {p.offerExpiryDate && (
+                <div className="mt-2.5 text-[9px] text-brand-orange bg-brand-orange/5 px-2 py-1 rounded-lg font-bold inline-flex items-center gap-1.5 border border-brand-orange/10 self-start">
+                  <Calendar size={10} />
+                  <span>Vence: {p.offerExpiryDate}</span>
+                </div>
+              )}
             </motion.div>
           ))}
         </div>
@@ -1068,7 +1192,8 @@ const OffersPreview = ({ products, onSeeMore }: { products: Product[], onSeeMore
 };
 
 const OffersPage = ({ products }: { products: Product[] }) => {
-  const offerProducts = products.filter(p => p.isOffer);
+  const todayStr = new Date().toISOString().split('T')[0];
+  const offerProducts = products.filter(p => p.isOffer && (!p.offerExpiryDate || p.offerExpiryDate >= todayStr));
 
   return (
     <div className="min-h-screen pt-32 pb-24 bg-bg-warm">
@@ -1101,7 +1226,13 @@ const OffersPage = ({ products }: { products: Product[] }) => {
                 className="bg-white rounded-3xl shadow-xl overflow-hidden border border-brand-orange/20 relative group"
               >
                 <div className="aspect-square relative overflow-hidden">
-                  <img src={p.imageUrl} alt={p.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" referrerPolicy="no-referrer" />
+                  <img 
+                    src={normalizeProductImageUrl(p.imageUrl, p.category, p.id)} 
+                    alt={p.name} 
+                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" 
+                    referrerPolicy="no-referrer" 
+                    onError={(e) => handleImageError(e, p.category, p.id)}
+                  />
                   <div className="absolute top-4 right-4 bg-brand-orange text-white px-3 py-1.5 rounded-xl text-xs font-black shadow-lg">
                     AHORRA S/ {(p.price - (p.offerPrice || 0)).toFixed(2)}
                   </div>
@@ -1113,7 +1244,15 @@ const OffersPage = ({ products }: { products: Product[] }) => {
                 </div>
                 <div className="p-6">
                   <h3 className="font-bold text-slate-900 mb-2 truncate group-hover:text-brand-orange transition-colors">{p.name}</h3>
-                  <p className="text-xs text-slate-500 mb-4">{p.authorOrBrand}</p>
+                  <p className="text-xs text-slate-500 mb-2">{p.authorOrBrand}</p>
+                  
+                  {p.offerExpiryDate && (
+                    <div className="mb-4 inline-flex items-center gap-1.5 text-[10px] text-brand-orange bg-brand-orange/5 px-2.5 py-1 rounded-lg border border-brand-orange/10 font-bold">
+                      <Calendar size={11} className="shrink-0" />
+                      <span>Oferta vence: {p.offerExpiryDate}</span>
+                    </div>
+                  )}
+
                   <div className="flex items-center justify-between mb-6">
                     <div>
                       <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Ahora solo</p>
@@ -1584,13 +1723,20 @@ export default function App() {
       setUser(firebaseUser);
       if (firebaseUser) {
         // Simple Admin Check
-        const adminDoc = await getDoc(doc(db, 'admins', firebaseUser.uid));
-        if (!adminDoc.exists() && firebaseUser.email === "martinherickcahuanamendoza@gmail.com") {
-          await setDoc(doc(db, 'admins', firebaseUser.uid), { email: firebaseUser.email, role: 'owner' });
-          setIsAdmin(true);
-        } else {
-          setIsAdmin(adminDoc.exists());
+        let adminExists = false;
+        try {
+          const adminDoc = await getDoc(doc(db, 'admins', firebaseUser.uid));
+          adminExists = adminDoc.exists();
+          if (!adminExists && firebaseUser.email?.toLowerCase() === "martinherickcahuanamendoza@gmail.com") {
+            await setDoc(doc(db, 'admins', firebaseUser.uid), { email: firebaseUser.email, role: 'owner' });
+            adminExists = true;
+          }
+        } catch (e) {
+          console.warn("Could not fetch or create admin doc:", e);
         }
+        
+        // Force true if they are the main user
+        setIsAdmin(adminExists || firebaseUser.email?.toLowerCase() === "martinherickcahuanamendoza@gmail.com");
       } else {
         setIsAdmin(false);
       }

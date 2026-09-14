@@ -8,7 +8,12 @@ service cloud.firestore {
 
     // --- Helpers ---
     function isSignedIn() { return request.auth != null; }
-    function isAdmin() { return isSignedIn() && exists(/databases/$(database)/documents/admins/$(request.auth.uid)); }
+    function isAdmin() { 
+      return isSignedIn() && (
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid)) ||
+        request.auth.token.email.lower() == "martinherickcahuanamendoza@gmail.com"
+      );
+    }
     function incoming() { return request.resource.data; }
     function existing() { return resource.data; }
     function isValidId(id) { return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$'); }
@@ -27,6 +32,7 @@ service cloud.firestore {
              (!('featured' in data) || data.featured is bool) &&
              (!('isOffer' in data) || data.isOffer is bool) &&
              (!('offerPrice' in data) || data.offerPrice == null || data.offerPrice is number) &&
+             (!('offerExpiryDate' in data) || data.offerExpiryDate == null || data.offerExpiryDate is string) &&
              (!('description' in data) || (data.description is string && data.description.size() <= 5000)) &&
              (!('imageUrl' in data) || (data.imageUrl is string && data.imageUrl.size() <= 2000000)) &&
              (!('tag' in data) || (data.tag is string && data.tag.size() <= 100)) &&
@@ -75,6 +81,67 @@ service cloud.firestore {
              (!('updatedAt' in data) || data.updatedAt == request.time || data.updatedAt is timestamp);
     }
 
+    // Validation for Debtor
+    function isValidDebtor(data) {
+      return data.keys().hasAll(['apellidosNombres', 'fecha', 'producto', 'precio', 'estado']) &&
+             data.apellidosNombres is string && data.apellidosNombres.size() > 0 && data.apellidosNombres.size() <= 300 &&
+             data.fecha is string && data.fecha.size() <= 50 &&
+             data.producto is string && data.producto.size() > 0 && data.producto.size() <= 500 &&
+             data.precio is number && data.precio >= 0 &&
+             data.estado is string && (data.estado == 'Pendiente' || data.estado == 'Pagado' || data.estado == 'Vencido') &&
+             (!('observacion' in data) || data.observacion is string) &&
+             (!('createdAt' in data) || data.createdAt == request.time || data.createdAt is timestamp) &&
+             (!('updatedAt' in data) || data.updatedAt == request.time || data.updatedAt is timestamp);
+    }
+
+    // Validation for SalesNote
+    function isValidSalesNote(data) {
+      return data.keys().hasAll(['number', 'clientName', 'date', 'items', 'total']) &&
+             data.number is string && data.number.size() > 0 &&
+             data.clientName is string && data.clientName.size() > 0 && data.clientName.size() <= 400 &&
+             data.date is string && data.date.size() <= 60 &&
+             data.items is list &&
+             data.total is number && data.total >= 0 &&
+             (!('clientDoc' in data) || data.clientDoc is string) &&
+             (!('subtotal' in data) || data.subtotal is number) &&
+             (!('discount' in data) || data.discount is number) &&
+             (!('igv' in data) || data.igv is number) &&
+             (!('paymentMethod' in data) || data.paymentMethod is string) &&
+             (!('status' in data) || data.status is string) &&
+             (!('paidAmount' in data) || data.paidAmount is number) &&
+             (!('notes' in data) || data.notes is string) &&
+             (!('createdAt' in data) || data.createdAt == request.time || data.createdAt is timestamp) &&
+             (!('updatedAt' in data) || data.updatedAt == request.time || data.updatedAt is timestamp);
+    }
+
+    // Validation for ServiceTicket
+    function isValidServiceTicket(data) {
+      return data.keys().hasAll(['number', 'clientName', 'date', 'items', 'total']) &&
+             data.number is string && data.number.size() > 0 &&
+             data.clientName is string && data.clientName.size() > 0 && data.clientName.size() <= 400 &&
+             data.date is string && data.date.size() <= 60 &&
+             data.items is list &&
+             data.total is number && data.total >= 0 &&
+             (!('subtotal' in data) || data.subtotal is number) &&
+             (!('notes' in data) || data.notes is string) &&
+             (!('createdAt' in data) || data.createdAt == request.time || data.createdAt is timestamp) &&
+             (!('updatedAt' in data) || data.updatedAt == request.time || data.updatedAt is timestamp);
+    }
+
+    // Validation for NetflixAccount
+    function isValidNetflixAccount(data) {
+      return data.keys().hasAll(['name', 'monthlyAmount', 'payments']) &&
+             data.name is string && data.name.size() > 0 && data.name.size() <= 400 &&
+             data.monthlyAmount is number &&
+             data.payments is map &&
+             (!('phone' in data) || data.phone is string) &&
+             (!('profile' in data) || data.profile is string) &&
+             (!('notes' in data) || data.notes is string) &&
+             (!('order' in data) || data.order is number) &&
+             (!('createdAt' in data) || data.createdAt == request.time || data.createdAt is timestamp) &&
+             (!('updatedAt' in data) || data.updatedAt == request.time || data.updatedAt is timestamp);
+    }
+
     // --- Collections ---
 
     // Products Collection
@@ -94,8 +161,7 @@ service cloud.firestore {
       allow read: if isSignedIn() && request.auth.uid == userId;
       // Bootstrapped Admin
       allow create: if isSignedIn() && 
-                    request.auth.token.email == "martinherickcahuanamendoza@gmail.com" &&
-                    request.auth.token.email_verified == true &&
+                    (request.auth.token.email == "martinherickcahuanamendoza@gmail.com" || request.auth.token.email.lower() == "martinherickcahuanamendoza@gmail.com") &&
                     incoming().email == request.auth.token.email &&
                     (incoming().role == "admin" || incoming().role == "owner");
                     
@@ -126,6 +192,42 @@ service cloud.firestore {
       allow create: if isAdmin() && isValidId(orderId) && isValidPurchaseOrder(incoming()) &&
                     (incoming().createdAt == request.time || incoming().createdAt is timestamp);
       allow update: if isAdmin() && isValidPurchaseOrder(incoming());
+      allow delete: if isAdmin();
+    }
+
+    // Debtors Collection
+    match /debtors/{debtorId} {
+      allow read: if isAdmin();
+      allow create: if isAdmin() && isValidId(debtorId) && isValidDebtor(incoming()) &&
+                    (incoming().createdAt == request.time || incoming().createdAt is timestamp);
+      allow update: if isAdmin() && isValidDebtor(incoming());
+      allow delete: if isAdmin();
+    }
+
+    // Sales Notes Collection
+    match /sales_notes/{noteId} {
+      allow read: if isAdmin();
+      allow create: if isAdmin() && isValidId(noteId) && isValidSalesNote(incoming()) &&
+                    (incoming().createdAt == request.time || incoming().createdAt is timestamp);
+      allow update: if isAdmin() && isValidSalesNote(incoming());
+      allow delete: if isAdmin();
+    }
+
+    // Service Tickets Collection (Extra incomes)
+    match /service_tickets/{ticketId} {
+      allow read: if isAdmin();
+      allow create: if isAdmin() && isValidId(ticketId) && isValidServiceTicket(incoming()) &&
+                    (incoming().createdAt == request.time || incoming().createdAt is timestamp);
+      allow update: if isAdmin() && isValidServiceTicket(incoming());
+      allow delete: if isAdmin();
+    }
+
+    // Netflix Accounts Collection
+    match /netflix_accounts/{accountId} {
+      allow read: if isAdmin();
+      allow create: if isAdmin() && isValidId(accountId) && isValidNetflixAccount(incoming()) &&
+                    (incoming().createdAt == request.time || incoming().createdAt is timestamp);
+      allow update: if isAdmin() && isValidNetflixAccount(incoming());
       allow delete: if isAdmin();
     }
   }

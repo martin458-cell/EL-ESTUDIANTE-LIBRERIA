@@ -18,7 +18,9 @@ import {
   ChevronRight, 
   AlertCircle,
   FileDown,
-  FileSpreadsheet
+  FileSpreadsheet,
+  Eye,
+  EyeOff
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { jsPDF } from 'jspdf';
@@ -45,6 +47,9 @@ export const PurchaseOrderManager: React.FC = () => {
   
   // Active viewing detail order
   const [viewingOrderDetail, setViewingOrderDetail] = useState<PurchaseOrder | null>(null);
+
+  // Show/hide replenishment suggestions state
+  const [showSuggestions, setShowSuggestions] = useState(true);
 
   // State for delete confirmation modal
   const [deleteConfirmOrder, setDeleteConfirmOrder] = useState<PurchaseOrder | null>(null);
@@ -866,7 +871,7 @@ export const PurchaseOrderManager: React.FC = () => {
     <div className="flex-1 flex flex-col md:flex-row h-full overflow-hidden bg-slate-50/50">
       
       {/* LEFT PANEL: Purchase Orders List */}
-      <div className="w-full md:w-[420px] shrink-0 border-r border-slate-100 flex flex-col h-full bg-white">
+      <div className="w-full md:w-[340px] shrink-0 border-r border-slate-100 flex flex-col h-full bg-white">
         
         {/* Panel Header */}
         <div className="p-4 border-b border-slate-100 space-y-3 shrink-0">
@@ -1016,7 +1021,7 @@ export const PurchaseOrderManager: React.FC = () => {
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -10 }}
               onSubmit={handleSaveOrder}
-              className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm max-w-4xl mx-auto w-full flex flex-col h-full max-h-[82vh] md:max-h-[85vh] overflow-hidden"
+              className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm max-w-4xl mx-auto w-full flex flex-col h-full max-h-[92vh] md:max-h-[94vh] overflow-y-auto custom-scrollbar"
             >
               {/* Form Title */}
               <div className="flex items-center justify-between border-b border-slate-100 pb-3 shrink-0">
@@ -1192,44 +1197,57 @@ export const PurchaseOrderManager: React.FC = () => {
 
                   {/* LOW STOCK REPLENISHMENT SUGGESTIONS ROW */}
                   {products.some(p => (p.stock || 0) <= (p.minStock || 5)) && (
-                    <div className="bg-amber-50/40 border border-amber-100/50 p-2.5 rounded-xl space-y-2 shrink-0">
+                    <div className="bg-amber-50/40 border border-amber-100/50 p-2.5 rounded-xl space-y-2 shrink-0 transition-all duration-300">
                       <div className="flex justify-between items-center">
                         <span className="text-[9px] font-black text-amber-800 uppercase tracking-wider flex items-center gap-1">
                           <AlertCircle size={10} className="text-amber-600 animate-pulse" /> Sugerencias de Reposición (Stock Crítico)
                         </span>
-                        <span className="text-[8px] text-amber-600 font-sans">Sugerido para reabastecer</span>
+                        <div className="flex items-center gap-2">
+                          <span className="text-[8px] text-amber-600/80 font-sans hidden sm:inline">Sugerido para reabastecer</span>
+                          <button
+                            type="button"
+                            onClick={() => setShowSuggestions(!showSuggestions)}
+                            className="flex items-center gap-1 px-2 py-0.5 rounded bg-amber-100 hover:bg-amber-200 text-amber-900 border border-amber-200 text-[8px] font-extrabold uppercase transition cursor-pointer select-none"
+                            title={showSuggestions ? "Ocultar panel de sugerencias" : "Mostrar panel de sugerencias"}
+                          >
+                            {showSuggestions ? <EyeOff size={10} /> : <Eye size={10} />}
+                            {showSuggestions ? 'Ocultar' : 'Mostrar'}
+                          </button>
+                        </div>
                       </div>
-                      <div className="flex gap-2 overflow-x-auto pb-1 max-w-full custom-scrollbar">
-                        {products
-                          .filter(p => (p.stock || 0) <= (p.minStock || 5))
-                          .slice(0, 6) // Display top 6 low stock products in catalog
-                          .map(p => {
-                            const minS = p.minStock || 5;
-                            const currentS = p.stock || 0;
-                            const suggestedQty = Math.max(5, minS * 4 - currentS);
-                            const alreadyAdded = activeForm.items?.some(it => it.productId === p.id);
-                            return (
-                              <div key={p.id} className="bg-white border border-amber-100 p-2 rounded-lg text-[10px] min-w-[160px] max-w-[180px] shrink-0 flex flex-col justify-between shadow-xxs">
-                                <p className="font-extrabold text-slate-800 truncate leading-tight" title={p.name}>{p.name}</p>
-                                <div className="flex justify-between items-center mt-1 text-[8px] font-mono">
-                                  <span className="text-rose-600 font-bold">Stock actual: {currentS}</span>
-                                  <span className="text-slate-400">Min: {minS}</span>
+                      {showSuggestions && (
+                        <div className="flex gap-2 overflow-x-auto pb-1 max-w-full custom-scrollbar animate-fade-in">
+                          {products
+                            .filter(p => (p.stock || 0) <= (p.minStock || 5))
+                            .slice(0, 6) // Display top 6 low stock products in catalog
+                            .map(p => {
+                              const minS = p.minStock || 5;
+                              const currentS = p.stock || 0;
+                              const suggestedQty = Math.max(5, minS * 4 - currentS);
+                              const alreadyAdded = activeForm.items?.some(it => it.productId === p.id);
+                              return (
+                                <div key={p.id} className="bg-white border border-amber-100 p-2 rounded-lg text-[10px] min-w-[160px] max-w-[180px] shrink-0 flex flex-col justify-between shadow-xxs">
+                                  <p className="font-extrabold text-slate-800 truncate leading-tight" title={p.name}>{p.name}</p>
+                                  <div className="flex justify-between items-center mt-1 text-[8px] font-mono">
+                                    <span className="text-rose-600 font-bold">Stock actual: {currentS}</span>
+                                    <span className="text-slate-400">Min: {minS}</span>
+                                  </div>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleAddLowStockItem(p)}
+                                    className={`mt-1.5 w-full py-1 rounded text-[8px] font-black uppercase text-center cursor-pointer transition ${
+                                      alreadyAdded 
+                                        ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                                        : 'bg-amber-100 hover:bg-amber-150 text-amber-900'
+                                    }`}
+                                  >
+                                    {alreadyAdded ? '✓ Añadido' : `+ Sugerir ${suggestedQty} unds`}
+                                  </button>
                                 </div>
-                                <button
-                                  type="button"
-                                  onClick={() => handleAddLowStockItem(p)}
-                                  className={`mt-1.5 w-full py-1 rounded text-[8px] font-black uppercase text-center cursor-pointer transition ${
-                                    alreadyAdded 
-                                      ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                                      : 'bg-amber-100 hover:bg-amber-150 text-amber-900'
-                                  }`}
-                                >
-                                  {alreadyAdded ? '✓ Añadido' : `+ Sugerir ${suggestedQty} unds`}
-                                </button>
-                              </div>
-                            );
-                          })}
-                      </div>
+                              );
+                            })}
+                        </div>
+                      )}
                     </div>
                   )}
 
@@ -1355,7 +1373,7 @@ export const PurchaseOrderManager: React.FC = () => {
               initial={{ opacity: 0, scale: 0.98 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.98 }}
-              className="bg-white border border-slate-100 rounded-3xl p-6 shadow-sm max-w-3xl mx-auto w-full flex flex-col overflow-hidden max-h-[82vh] md:max-h-[85vh]"
+              className="bg-white border border-slate-100 rounded-3xl p-6 shadow-sm max-w-3xl mx-auto w-full flex flex-col overflow-y-auto max-h-[92vh] md:max-h-[94vh] custom-scrollbar"
             >
               <div className="flex justify-between items-start border-b border-slate-100 pb-4 shrink-0">
                 <div className="min-w-0 flex-1">

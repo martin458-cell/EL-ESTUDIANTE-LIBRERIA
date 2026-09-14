@@ -12,6 +12,9 @@
         "category": { "type": "string", "enum": ["libros", "utiles", "tecnologia"], "description": "Categoría del producto" },
         "imageUrl": { "type": "string", "description": "URL de la imagen" },
         "tag": { "type": "string", "description": "Etiqueta opcional (Oferta, Nuevo, etc.)" },
+        "isOffer": { "type": "boolean", "description": "Si está en oferta" },
+        "offerPrice": { "type": "number", "description": "Precio de oferta" },
+        "offerExpiryDate": { "type": "string", "description": "Fecha de vencimiento de la oferta (YYYY-MM-DD)" },
         "createdAt": { "type": "string", "format": "date-time" },
         "updatedAt": { "type": "string", "format": "date-time" }
       },
@@ -75,6 +78,79 @@
         "updatedAt": { "type": "string", "format": "date-time" }
       },
       "required": ["supplierId", "supplierName", "status", "items"]
+    },
+    "Debtor": {
+      "title": "Debtor",
+      "description": "Registro de mercadería entregada a crédito (deudores).",
+      "type": "object",
+      "properties": {
+        "apellidosNombres": { "type": "string", "description": "Apellidos y nombres del deudor" },
+        "fecha": { "type": "string", "description": "Fecha del otorgamiento de crédito (YYYY-MM-DD)" },
+        "producto": { "type": "string", "description": "Producto entregado" },
+        "precio": { "type": "number", "description": "Precio o monto de la deuda" },
+        "estado": { "type": "string", "enum": ["Pendiente", "Pagado", "Vencido"], "description": "Estado de la deuda" },
+        "observacion": { "type": "string", "description": "Observaciones adicionales" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["apellidosNombres", "fecha", "producto", "precio", "estado"]
+    },
+    "SalesNote": {
+      "title": "SalesNote",
+      "description": "Nota de venta o boleta interna con listado de productos, subtotales y estado.",
+      "type": "object",
+      "properties": {
+        "number": { "type": "string", "description": "Correlativo de la nota (NV-0001, etc.)" },
+        "clientName": { "type": "string", "description": "Nombre del cliente" },
+        "clientDoc": { "type": "string", "description": "Documento del cliente (DNI, RUC o vacío)" },
+        "date": { "type": "string", "description": "Fecha de la venta (YYYY-MM-DD)" },
+        "items": { "type": "array", "description": "Lista de productos vendidos" },
+        "subtotal": { "type": "number" },
+        "discount": { "type": "number" },
+        "igv": { "type": "number" },
+        "total": { "type": "number" },
+        "paymentMethod": { "type": "string", "enum": ["Efectivo", "Yape", "Plin", "Transferencia", "Tarjeta"] },
+        "status": { "type": "string", "enum": ["Cancelado", "Pendiente", "Parcial"] },
+        "paidAmount": { "type": "number", "description": "Importe pagado a cuenta" },
+        "notes": { "type": "string", "description": "Observaciones adicionales" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["number", "clientName", "date", "items", "total"]
+    },
+    "ServiceTicket": {
+      "title": "ServiceTicket",
+      "description": "Registro de servicios extras realizados en la librería (impresiones, fotocopias, etc.)",
+      "type": "object",
+      "properties": {
+        "number": { "type": "string", "description": "Correlativo de la nota de servicio (SER-0001, etc.)" },
+        "clientName": { "type": "string", "description": "Nombre del cliente o Público General" },
+        "date": { "type": "string", "description": "Fecha del servicio (YYYY-MM-DD)" },
+        "items": { "type": "array", "description": "Lista de servicios realizados" },
+        "subtotal": { "type": "number" },
+        "total": { "type": "number" },
+        "notes": { "type": "string", "description": "Notas o comentarios adicionales" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["number", "clientName", "date", "items", "total"]
+    },
+    "NetflixAccount": {
+      "title": "NetflixAccount",
+      "description": "Registro de control de pagos de usuarios de Netflix.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string", "description": "Nombre del personal o usuario" },
+        "phone": { "type": "string", "description": "Teléfono de contacto para avisos" },
+        "profile": { "type": "string", "description": "Perfil de Netflix asignado" },
+        "monthlyAmount": { "type": "number", "description": "Monto de pago mensual en soles (ej. 14)" },
+        "payments": { "type": "object", "description": "Mapeo de mes (01-12) a estado de pago (boolean)" },
+        "notes": { "type": "string", "description": "Observaciones" },
+        "order": { "type": "number", "description": "Orden de visualización" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["name", "monthlyAmount", "payments"]
     }
   },
   "firestore": {
@@ -97,6 +173,22 @@
     "/purchase_orders/{orderId}": {
       "schema": "PurchaseOrder",
       "description": "Colección de pedidos de compra consolidados para reposición."
+    },
+    "/debtors/{debtorId}": {
+      "schema": "Debtor",
+      "description": "Colección de deudores de mercadería a crédito."
+    },
+    "/sales_notes/{noteId}": {
+      "schema": "SalesNote",
+      "description": "Colección global de notas de venta registradas."
+    },
+    "/service_tickets/{ticketId}": {
+      "schema": "ServiceTicket",
+      "description": "Colección global de registros de servicios y cálculo de extras."
+    },
+    "/netflix_accounts/{accountId}": {
+      "schema": "NetflixAccount",
+      "description": "Control de pago de usuarios Netflix para el año 2026."
     }
   }
 }

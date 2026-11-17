@@ -13,7 +13,8 @@ import {
   Smartphone,
   Star,
   Calendar,
-  Eye
+  Eye,
+  Monitor
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Product } from '../hooks/useProducts';
@@ -109,6 +110,7 @@ export const EscaparateDigital: React.FC<EscaparateDigitalProps> = ({ products, 
   const [index, setIndex] = useState(0);
   const [isPlaying, setIsPlaying] = useState(true);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [isPure100, setIsPure100] = useState(false);
 
   const fullscreenContainerRef = useRef<HTMLDivElement>(null);
 
@@ -287,17 +289,17 @@ export const EscaparateDigital: React.FC<EscaparateDigitalProps> = ({ products, 
               <button
                 type="button"
                 onClick={enterFullscreen}
-                title="Ver Escaparate Digital en Pantalla Completa"
-                aria-label="Ver en pantalla completa"
-                className="h-9 px-3 rounded-xl bg-slate-900 hover:bg-brand-teal text-white font-semibold text-xs flex items-center gap-1.5 transition-colors shadow-sm cursor-pointer whitespace-nowrap shrink-0"
+                title="Expandir Escaparate Digital al 100% de la pantalla"
+                aria-label="Expandir al 100% de la pantalla"
+                className="h-9 px-3.5 rounded-xl bg-slate-900 hover:bg-brand-teal text-white font-semibold text-xs flex items-center gap-1.5 transition-colors shadow-sm cursor-pointer whitespace-nowrap shrink-0"
               >
                 <Maximize2 size={14} />
-                <span className="hidden sm:inline">Pantalla completa</span>
+                <span>Pantalla 100%</span>
               </button>
             </div>
           </div>
 
-          {/* Escenario del Producto Actual */}
+          {/* Escenario del Producto Actual (ampliado para mayor visibilidad) */}
           <AnimatePresence mode="wait">
             <motion.div
               key={`${current.id}-${index}`}
@@ -308,12 +310,12 @@ export const EscaparateDigital: React.FC<EscaparateDigitalProps> = ({ products, 
             >
               <div
                 onClick={() => onSelectProduct?.(current)}
-                className="relative aspect-[4/3] overflow-hidden rounded-[1.75rem] bg-slate-50 cursor-pointer group/stage"
+                className="relative aspect-[16/11] sm:aspect-[16/10] min-h-[280px] sm:min-h-[370px] lg:min-h-[420px] overflow-hidden rounded-[1.75rem] bg-slate-50 cursor-pointer group/stage"
               >
                 <img
                   src={normalizeProductImageUrl(current.imageUrl, current.category, current.id)}
                   alt={current.name}
-                  className="w-full h-full object-contain p-5 transition-transform duration-500 group-hover/stage:scale-105"
+                  className="w-full h-full object-contain p-3 sm:p-4 transition-transform duration-500 group-hover/stage:scale-105"
                   referrerPolicy="no-referrer"
                   onError={(e) => handleImageError(e, current.category, current.id)}
                 />
@@ -321,22 +323,22 @@ export const EscaparateDigital: React.FC<EscaparateDigitalProps> = ({ products, 
 
                 {/* Etiqueta única superior derecha */}
                 {hasValidOffer ? (
-                  <div className="absolute top-3.5 right-3.5 bg-brand-orange text-white text-[11px] font-bold px-3 py-1 rounded-lg shadow-md tabular-nums">
+                  <div className="absolute top-3.5 right-3.5 bg-brand-orange text-white text-xs font-bold px-3.5 py-1.5 rounded-xl shadow-md tabular-nums">
                     -{discountPct}% Oferta
                   </div>
                 ) : current.featured ? (
-                  <div className="absolute top-3.5 right-3.5 bg-amber-400 text-slate-900 text-[11px] font-bold px-3 py-1 rounded-lg shadow-md flex items-center gap-1.5">
+                  <div className="absolute top-3.5 right-3.5 bg-amber-400 text-slate-900 text-xs font-bold px-3.5 py-1.5 rounded-xl shadow-md flex items-center gap-1.5">
                     <Star size={12} fill="currentColor" /> Novedad
                   </div>
                 ) : null}
 
                 {/* Información sobre gradiente inferior */}
-                <div className="absolute bottom-4 left-5 right-5 text-left">
-                  <p className="text-teal-300 text-xs font-semibold tracking-wide mb-1">
+                <div className="absolute bottom-5 left-6 right-6 text-left">
+                  <p className="text-teal-300 text-xs sm:text-sm font-semibold tracking-wide mb-1">
                     {categoryLabel}
                     {current.authorOrBrand ? ` · ${current.authorOrBrand}` : ''}
                   </p>
-                  <h3 className="text-lg sm:text-xl font-display font-bold text-white leading-snug line-clamp-2 drop-shadow-sm">
+                  <h3 className="text-xl sm:text-2xl lg:text-[26px] font-display font-bold text-white leading-snug line-clamp-2 drop-shadow-sm">
                     {current.name}
                   </h3>
                 </div>
@@ -349,7 +351,7 @@ export const EscaparateDigital: React.FC<EscaparateDigitalProps> = ({ products, 
                     type="button"
                     onClick={handlePrev}
                     aria-label="Producto anterior"
-                    className="w-9 h-9 rounded-xl bg-slate-100 hover:bg-teal-50 text-slate-600 hover:text-brand-teal flex items-center justify-center transition-colors cursor-pointer shrink-0"
+                    className="w-10 h-10 rounded-xl bg-slate-100 hover:bg-teal-50 text-slate-600 hover:text-brand-teal flex items-center justify-center transition-colors cursor-pointer shrink-0"
                   >
                     <ChevronLeft size={18} />
                   </button>
@@ -357,7 +359,7 @@ export const EscaparateDigital: React.FC<EscaparateDigitalProps> = ({ products, 
                     type="button"
                     onClick={handleNext}
                     aria-label="Siguiente producto"
-                    className="w-9 h-9 rounded-xl bg-slate-100 hover:bg-teal-50 text-slate-600 hover:text-brand-teal flex items-center justify-center transition-colors cursor-pointer shrink-0"
+                    className="w-10 h-10 rounded-xl bg-slate-100 hover:bg-teal-50 text-slate-600 hover:text-brand-teal flex items-center justify-center transition-colors cursor-pointer shrink-0"
                   >
                     <ChevronRight size={18} />
                   </button>
@@ -365,25 +367,25 @@ export const EscaparateDigital: React.FC<EscaparateDigitalProps> = ({ products, 
                     <button
                       type="button"
                       onClick={() => onSelectProduct(current)}
-                      className="h-9 px-3 rounded-xl bg-teal-50 hover:bg-brand-teal text-brand-teal hover:text-white text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer whitespace-nowrap shrink-0"
+                      className="h-10 px-3.5 rounded-xl bg-teal-50 hover:bg-brand-teal text-brand-teal hover:text-white text-xs sm:text-sm font-semibold flex items-center gap-1.5 transition-colors cursor-pointer whitespace-nowrap shrink-0"
                     >
-                      <Eye size={14} />
+                      <Eye size={15} />
                       <span className="hidden xs:inline">Ver detalle</span>
                     </button>
                   )}
                 </div>
 
                 <div className="text-right shrink-0">
-                  <p className="text-[11px] font-semibold text-slate-400">
+                  <p className="text-[11px] sm:text-xs font-semibold text-slate-400">
                     {current.stock > 0 ? `${current.stock} disponibles` : 'Consultar stock'}
                   </p>
                   <div className="flex items-baseline justify-end gap-2 tabular-nums">
                     {hasValidOffer && (
-                      <span className="text-xs text-slate-400 line-through">
+                      <span className="text-xs sm:text-sm text-slate-400 line-through">
                         S/ {current.price.toFixed(2)}
                       </span>
                     )}
-                    <p className="text-2xl font-display font-bold text-slate-900">
+                    <p className="text-2xl sm:text-3xl font-display font-bold text-slate-900">
                       {displayPrice.toLocaleString('es-PE', { style: 'currency', currency: 'PEN' })}
                     </p>
                   </div>
@@ -404,7 +406,7 @@ export const EscaparateDigital: React.FC<EscaparateDigitalProps> = ({ products, 
         </div>
       </div>
 
-      {/* Vista Inmersiva en Pantalla Completa */}
+      {/* Vista Inmersiva 100% de la Pantalla */}
       {isFullscreen &&
         createPortal(
           <div
@@ -412,10 +414,10 @@ export const EscaparateDigital: React.FC<EscaparateDigitalProps> = ({ products, 
             role="dialog"
             aria-modal="true"
             aria-label="Escaparate Digital en Pantalla Completa"
-            className="fixed inset-0 z-[120] bg-slate-950 text-white flex flex-col justify-between overflow-y-auto"
+            className="fixed inset-0 z-[120] w-screen h-screen bg-slate-950 text-white flex flex-col justify-between overflow-y-auto lg:overflow-hidden"
           >
             {/* Zona Superior: Barra de 3 zonas */}
-            <header className="flex flex-wrap items-center justify-between gap-4 px-5 sm:px-8 py-4 border-b border-white/10 bg-slate-950/90 backdrop-blur-md shrink-0">
+            <header className="flex flex-wrap items-center justify-between gap-4 px-4 sm:px-6 lg:px-8 py-3 border-b border-white/10 bg-slate-950/90 backdrop-blur-md shrink-0">
               {/* Zona 1: Marca */}
               <div className="flex items-center gap-3 whitespace-nowrap shrink-0">
                 <img src="/logo.svg" alt="Librería El Estudiante" className="h-8 w-auto object-contain" />
@@ -436,8 +438,21 @@ export const EscaparateDigital: React.FC<EscaparateDigitalProps> = ({ products, 
                 <span className="md:hidden text-teal-300 font-medium">{categoryLabel}</span>
               </div>
 
-              {/* Zona 3: Controles de reproducción y salida */}
+              {/* Zona 3: Controles de reproducción, vista 100% y salida */}
               <div className="flex items-center gap-2 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => setIsPure100((v) => !v)}
+                  title={isPure100 ? 'Mostrar barra de siguientes productos' : 'Expandir producto al 100% de la pantalla'}
+                  className={`h-10 px-3.5 rounded-xl border text-xs font-semibold flex items-center gap-2 transition-colors cursor-pointer whitespace-nowrap ${
+                    isPure100
+                      ? 'bg-brand-teal border-teal-400 text-white'
+                      : 'bg-slate-900 hover:bg-slate-800 border-white/15 text-slate-200'
+                  }`}
+                >
+                  <Monitor size={15} />
+                  <span className="hidden sm:inline">{isPure100 ? 'Vista completa 100%' : 'Solo vitrina 100%'}</span>
+                </button>
                 <button
                   type="button"
                   onClick={handleReshuffle}
@@ -465,44 +480,52 @@ export const EscaparateDigital: React.FC<EscaparateDigitalProps> = ({ products, 
               </div>
             </header>
 
-            {/* Zona Central: Escenario de Producto en 2 Columnas */}
-            <main className="flex-1 flex items-center justify-center px-4 sm:px-8 lg:px-12 py-6 min-h-0">
-              <div className="w-full max-w-6xl mx-auto">
+            {/* Zona Central: Escenario ancho 100% para máxima visibilidad */}
+            <main className="flex-1 flex items-stretch justify-center px-4 sm:px-6 lg:px-8 py-4 sm:py-5 min-h-0">
+              <div className="w-full h-full flex items-stretch">
                 <AnimatePresence mode="wait">
                   <motion.div
                     key={`fs-${current.id}-${index}`}
-                    initial={{ opacity: 0, y: 12 }}
+                    initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -12 }}
+                    exit={{ opacity: 0, y: -10 }}
                     transition={{ duration: 0.35, ease: 'easeOut' }}
-                    className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-10 items-stretch"
+                    className="w-full grid grid-cols-1 lg:grid-cols-12 gap-5 lg:gap-6 items-stretch"
                   >
-                    {/* Columna Imagen */}
-                    <div className="lg:col-span-6 bg-white rounded-3xl p-6 sm:p-10 flex items-center justify-center relative min-h-[280px] sm:min-h-[380px] lg:min-h-[460px] shadow-2xl">
+                    {/* Columna Imagen ampliada al máximo disponible */}
+                    <div
+                      className={`lg:col-span-7 bg-white rounded-3xl p-4 sm:p-6 flex items-center justify-center relative shadow-2xl min-h-[300px] sm:min-h-[420px] ${
+                        isPure100 ? 'lg:h-[calc(100vh-110px)]' : 'lg:h-[calc(100vh-205px)]'
+                      }`}
+                    >
                       <img
                         src={normalizeProductImageUrl(current.imageUrl, current.category, current.id)}
                         alt={current.name}
-                        className="w-full h-full max-h-[420px] object-contain"
+                        className="w-full h-full object-contain max-h-full"
                         referrerPolicy="no-referrer"
                         onError={(e) => handleImageError(e, current.category, current.id)}
                       />
 
                       {hasValidOffer ? (
-                        <div className="absolute top-5 left-5 bg-brand-orange text-white text-xs sm:text-sm font-bold px-4 py-1.5 rounded-xl shadow-md tabular-nums">
+                        <div className="absolute top-5 left-5 bg-brand-orange text-white text-sm sm:text-base font-bold px-4 py-2 rounded-xl shadow-md tabular-nums">
                           -{discountPct}% Descuento
                         </div>
                       ) : current.featured ? (
-                        <div className="absolute top-5 left-5 bg-amber-400 text-slate-900 text-xs font-bold px-3.5 py-1.5 rounded-xl shadow-md flex items-center gap-1.5">
-                          <Star size={14} fill="currentColor" /> Novedad destacada
+                        <div className="absolute top-5 left-5 bg-amber-400 text-slate-900 text-xs sm:text-sm font-bold px-4 py-2 rounded-xl shadow-md flex items-center gap-1.5">
+                          <Star size={15} fill="currentColor" /> Novedad destacada
                         </div>
                       ) : null}
                     </div>
 
-                    {/* Columna Detalles */}
-                    <div className="lg:col-span-6 flex flex-col justify-between bg-slate-900/70 border border-white/10 rounded-3xl p-6 sm:p-8 lg:p-10">
-                      <div>
+                    {/* Columna Detalles de alta legibilidad */}
+                    <div
+                      className={`lg:col-span-5 flex flex-col justify-between bg-slate-900/75 border border-white/10 rounded-3xl p-6 sm:p-8 xl:p-10 ${
+                        isPure100 ? 'lg:h-[calc(100vh-110px)]' : 'lg:h-[calc(100vh-205px)]'
+                      }`}
+                    >
+                      <div className="min-h-0 flex-1 flex flex-col justify-center">
                         {/* Metadatos limpios sin pills */}
-                        <div className="flex flex-wrap items-center gap-2 text-xs sm:text-sm text-teal-300 font-semibold mb-4">
+                        <div className="flex flex-wrap items-center gap-2 text-xs sm:text-base text-teal-300 font-semibold mb-4">
                           <span>{categoryLabel}</span>
                           {current.sku && (
                             <>
@@ -517,37 +540,37 @@ export const EscaparateDigital: React.FC<EscaparateDigitalProps> = ({ products, 
                         </div>
 
                         <h2
-                          className="font-display text-2xl sm:text-4xl lg:text-5xl font-bold text-white leading-tight mb-4"
+                          className="font-display text-3xl sm:text-4xl xl:text-5xl font-bold text-white leading-tight mb-4"
                           style={{ textWrap: 'balance' }}
                         >
                           {current.name}
                         </h2>
 
                         {current.authorOrBrand && (
-                          <p className="text-slate-300 text-sm sm:text-base font-medium mb-5">
+                          <p className="text-slate-300 text-base sm:text-lg font-medium mb-4">
                             Marca / Autor: <span className="text-white font-semibold">{current.authorOrBrand}</span>
                           </p>
                         )}
 
                         {current.description && (
-                          <p className="text-slate-300 text-sm sm:text-base leading-relaxed max-h-36 overflow-y-auto pr-2">
+                          <p className="text-slate-300 text-sm sm:text-base xl:text-lg leading-relaxed max-h-40 overflow-y-auto pr-2">
                             {current.description}
                           </p>
                         )}
                       </div>
 
-                      <div className="mt-8 pt-6 border-t border-white/10 space-y-6">
+                      <div className="mt-6 pt-6 border-t border-white/10 space-y-5 shrink-0">
                         <div className="flex flex-wrap items-end justify-between gap-4">
                           <div>
-                            <p className="text-xs font-semibold text-slate-400 mb-1">
+                            <p className="text-xs sm:text-sm font-semibold text-slate-400 mb-1">
                               {hasValidOffer ? 'Precio especial de oferta' : 'Precio en tienda Puquio'}
                             </p>
                             <div className="flex items-baseline gap-3 tabular-nums">
-                              <span className="text-4xl sm:text-5xl font-display font-bold text-white">
+                              <span className="text-4xl sm:text-5xl xl:text-6xl font-display font-bold text-white">
                                 {displayPrice.toLocaleString('es-PE', { style: 'currency', currency: 'PEN' })}
                               </span>
                               {hasValidOffer && (
-                                <span className="text-lg sm:text-xl text-slate-400 line-through">
+                                <span className="text-xl sm:text-2xl text-slate-400 line-through">
                                   {current.price.toLocaleString('es-PE', { style: 'currency', currency: 'PEN' })}
                                 </span>
                               )}
@@ -559,17 +582,17 @@ export const EscaparateDigital: React.FC<EscaparateDigitalProps> = ({ products, 
                               type="button"
                               onClick={handlePrev}
                               aria-label="Producto anterior"
-                              className="w-11 h-11 rounded-xl bg-slate-800 hover:bg-slate-700 border border-white/10 text-white flex items-center justify-center transition-colors cursor-pointer"
+                              className="w-12 h-12 rounded-xl bg-slate-800 hover:bg-slate-700 border border-white/10 text-white flex items-center justify-center transition-colors cursor-pointer"
                             >
-                              <ChevronLeft size={20} />
+                              <ChevronLeft size={22} />
                             </button>
                             <button
                               type="button"
                               onClick={handleNext}
                               aria-label="Siguiente producto"
-                              className="w-11 h-11 rounded-xl bg-slate-800 hover:bg-slate-700 border border-white/10 text-white flex items-center justify-center transition-colors cursor-pointer"
+                              className="w-12 h-12 rounded-xl bg-slate-800 hover:bg-slate-700 border border-white/10 text-white flex items-center justify-center transition-colors cursor-pointer"
                             >
-                              <ChevronRight size={20} />
+                              <ChevronRight size={22} />
                             </button>
                           </div>
                         </div>
@@ -605,51 +628,53 @@ export const EscaparateDigital: React.FC<EscaparateDigitalProps> = ({ products, 
               </div>
             </main>
 
-            {/* Zona Inferior: Siguientes productos y barra de progreso */}
-            <footer className="px-5 sm:px-8 py-4 border-t border-white/10 bg-slate-950/95 shrink-0">
-              <div className="max-w-6xl mx-auto space-y-3">
-                {upcomingItems.length > 0 && (
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                    {upcomingItems.map(({ item, targetIdx }) => (
-                      <button
-                        key={`${item.id}-${targetIdx}`}
-                        type="button"
-                        onClick={() => setIndex(targetIdx)}
-                        className="flex items-center gap-3 p-2.5 rounded-2xl bg-slate-900/90 hover:bg-slate-800 border border-white/10 hover:border-teal-500/40 text-left transition-colors cursor-pointer min-w-0"
-                      >
-                        <div className="w-11 h-11 rounded-xl bg-white p-1 shrink-0 overflow-hidden">
-                          <img
-                            src={normalizeProductImageUrl(item.imageUrl, item.category, item.id)}
-                            alt={item.name}
-                            className="w-full h-full object-contain"
-                            referrerPolicy="no-referrer"
-                            onError={(e) => handleImageError(e, item.category, item.id)}
-                          />
-                        </div>
-                        <div className="min-w-0 flex-1">
-                          <p className="text-[11px] font-semibold text-teal-300 truncate">
-                            {formatCategoryLabel(item.category)}
-                          </p>
-                          <p className="text-xs font-semibold text-white truncate">{item.name}</p>
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                )}
+            {/* Zona Inferior: Siguientes productos y barra de progreso (oculta en modo Solo Vitrina 100%) */}
+            {!isPure100 && (
+              <footer className="px-4 sm:px-6 lg:px-8 py-3 border-t border-white/10 bg-slate-950/95 shrink-0">
+                <div className="w-full space-y-2.5">
+                  {upcomingItems.length > 0 && (
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                      {upcomingItems.map(({ item, targetIdx }) => (
+                        <button
+                          key={`${item.id}-${targetIdx}`}
+                          type="button"
+                          onClick={() => setIndex(targetIdx)}
+                          className="flex items-center gap-3 p-2 rounded-2xl bg-slate-900/90 hover:bg-slate-800 border border-white/10 hover:border-teal-500/40 text-left transition-colors cursor-pointer min-w-0"
+                        >
+                          <div className="w-10 h-10 rounded-xl bg-white p-1 shrink-0 overflow-hidden">
+                            <img
+                              src={normalizeProductImageUrl(item.imageUrl, item.category, item.id)}
+                              alt={item.name}
+                              className="w-full h-full object-contain"
+                              referrerPolicy="no-referrer"
+                              onError={(e) => handleImageError(e, item.category, item.id)}
+                            />
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <p className="text-[11px] font-semibold text-teal-300 truncate">
+                              {formatCategoryLabel(item.category)}
+                            </p>
+                            <p className="text-xs font-semibold text-white truncate">{item.name}</p>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  )}
 
-                <div className="flex items-center gap-4">
-                  <div className="flex-1 h-1.5 bg-slate-800 rounded-full overflow-hidden">
-                    <div
-                      className="h-full bg-brand-teal rounded-full transition-all duration-300"
-                      style={{ width: `${progressPct}%` }}
-                    />
+                  <div className="flex items-center gap-4">
+                    <div className="flex-1 h-1.5 bg-slate-800 rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-brand-teal rounded-full transition-all duration-300"
+                        style={{ width: `${progressPct}%` }}
+                      />
+                    </div>
+                    <span className="text-[11px] text-slate-400 tabular-nums whitespace-nowrap">
+                      Atajos: ← → navegar · Espacio pausar · Esc salir
+                    </span>
                   </div>
-                  <span className="text-[11px] text-slate-400 tabular-nums whitespace-nowrap">
-                    Atajos: ← → navegar · Espacio pausar · Esc salir
-                  </span>
                 </div>
-              </div>
-            </footer>
+              </footer>
+            )}
           </div>,
           document.body
         )}

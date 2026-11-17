@@ -514,23 +514,27 @@ const Hero = ({
       <div className="absolute top-0 right-0 -z-10 w-1/2 h-full opacity-10 blur-3xl bg-brand-teal rounded-full transform translate-x-1/2 -translate-y-1/2"></div>
       <div className="absolute bottom-0 left-0 -z-10 w-1/3 h-1/2 opacity-5 blur-3xl bg-brand-orange rounded-full transform -translate-x-1/2 translate-y-1/2"></div>
       
-      <div className="max-w-7xl mx-auto px-6 grid md:grid-cols-2 gap-16 items-center">
+      <div className="max-w-[1440px] mx-auto px-6 lg:px-10 grid lg:grid-cols-12 gap-10 xl:gap-12 items-center">
         <motion.div
           initial={{ opacity: 0, x: -30 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.8, ease: "easeOut" }}
+          className="lg:col-span-5"
         >
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-teal-50 text-brand-teal text-xs font-bold uppercase tracking-wider mb-8 border border-brand-teal/20">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-teal-50 text-brand-teal text-xs font-bold uppercase tracking-wider mb-6 border border-brand-teal/20">
             <span className="relative flex h-2 w-2">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-brand-teal opacity-75"></span>
               <span className="relative inline-flex rounded-full h-2 w-2 bg-brand-teal"></span>
             </span>
             Tu aliado educativo en Puquio
           </div>
-          <h1 className="font-display text-5xl md:text-7xl font-bold leading-[1.1] mb-6 text-slate-900">
+          <h1
+            className="font-display text-4xl sm:text-5xl xl:text-6xl font-bold leading-[1.1] mb-5 text-slate-900"
+            style={{ textWrap: 'balance' }}
+          >
             Crecemos junto a <span className="text-brand-teal">tu futuro</span> y nuestra ciudad.
           </h1>
-          <p className="text-lg text-slate-600 mb-10 max-w-lg leading-relaxed">
+          <p className="text-base sm:text-lg text-slate-600 mb-8 max-w-lg leading-relaxed">
             Explora las últimas novedades que hemos traído a Puquio. Tecnología, libros y útiles para potenciar tu talento.
           </p>
           
@@ -651,10 +655,10 @@ const Hero = ({
         </motion.div>
         
         <motion.div
-          initial={{ opacity: 0, scale: 0.9 }}
+          initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 1, ease: "easeOut" }}
-          className="relative block"
+          transition={{ duration: 0.8, ease: "easeOut" }}
+          className="relative block lg:col-span-7"
         >
           <EscaparateDigital products={products} onSelectProduct={onSelectProduct} />
         </motion.div>

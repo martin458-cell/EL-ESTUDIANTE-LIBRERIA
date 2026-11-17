@@ -3,7 +3,7 @@ import {
   Plus, Edit2, Trash2, X, Save, Search, Package, Check, FileDown, 
   UploadCloud, Loader2, Briefcase, Users, Truck, TrendingUp, AlertTriangle, 
   FileSpreadsheet, Layers, Activity, AlertCircle, XCircle, CheckCircle2, Coins, FileText,
-  Tv, Menu, ChevronRight, LogOut
+  Tv, Menu, ChevronRight, LogOut, StickyNote
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Product } from '../hooks/useProducts';
@@ -19,6 +19,11 @@ import { DebtorManager } from './DebtorManager';
 import { SalesNoteManager } from './SalesNoteManager';
 import { ServicesCalculator } from './ServicesCalculator';
 import { NetflixManager } from './NetflixManager';
+import { DigitalManager } from './DigitalManager';
+import { QuickNotesManager } from './QuickNotesManager';
+import { useDigitalProducts } from '../hooks/useDigitalProducts';
+import { useQuickNotes } from '../hooks/useQuickNotes';
+import { Sparkles } from 'lucide-react';
 
 interface ExcelValidationIssue {
   row: number;
@@ -88,14 +93,19 @@ interface CatalogManagerProps {
 }
 
 export const CatalogManager: React.FC<CatalogManagerProps> = ({ products, onClose }) => {
-  const [activeTab, setActiveTab ] = useState<'catalog' | 'quoter' | 'suppliers' | 'clients' | 'purchaseOrders' | 'debtors' | 'salesNotes' | 'services' | 'netflix'>('catalog');
+  const [activeTab, setActiveTab ] = useState<'catalog' | 'digitales' | 'quickNotes' | 'quoter' | 'suppliers' | 'clients' | 'purchaseOrders' | 'debtors' | 'salesNotes' | 'services' | 'netflix'>('catalog');
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
+  const { digitalProducts, loading: digitalLoading } = useDigitalProducts();
+  const { notes: quickNotes } = useQuickNotes();
+  const quickNotesPendingCount = useMemo(() => quickNotes.filter(n => !n.completed).length, [quickNotes]);
 
   const ADMIN_NAV_SECTIONS = [
     {
       title: 'Operaciones y Ventas',
       items: [
         { id: 'catalog' as const, buttonId: 'admin-catalog-tab-button', label: 'Inventario', desc: 'Stock y Catálogo', icon: Package },
+        { id: 'quickNotes' as const, buttonId: 'admin-quick-notes-tab-button', label: 'Notas Rápidas', desc: 'Apuntes y Recordatorios', icon: StickyNote },
+        { id: 'digitales' as const, buttonId: 'admin-digitales-tab-button', label: 'Digitales El Estudiante', desc: 'Libros, Revistas y Fichas', icon: Sparkles },
         { id: 'quoter' as const, buttonId: 'admin-quoter-tab-button', label: 'Cotizador PDF', desc: 'Proformas Oficiales', icon: FileDown },
         { id: 'salesNotes' as const, buttonId: 'admin-sales-notes-tab-button', label: 'Nota de Venta', desc: 'Emisión y Boletas', icon: FileText },
       ]
@@ -1331,6 +1341,24 @@ export const CatalogManager: React.FC<CatalogManagerProps> = ({ products, onClos
             {/* Acciones de Cabecera */}
             <div className="flex items-center gap-2 shrink-0">
               <button 
+                onClick={() => setActiveTab('quickNotes')}
+                className={`px-3 py-1.5 rounded-xl transition-all flex items-center gap-1.5 text-xs font-bold cursor-pointer border ${
+                  activeTab === 'quickNotes'
+                    ? 'bg-amber-500 text-white border-amber-600 shadow-xs'
+                    : 'bg-amber-50 hover:bg-amber-100/90 text-amber-900 border-amber-200/80'
+                }`}
+                title="Abrir sección de notas rápidas y recordatorios"
+              >
+                <StickyNote size={14} className="text-amber-600 rotate-6" />
+                <span className="hidden sm:inline">Notas Rápidas</span>
+                {quickNotesPendingCount > 0 && (
+                  <span className="bg-amber-500 text-white text-[9px] px-1.5 py-0.2 rounded-full font-black">
+                    {quickNotesPendingCount}
+                  </span>
+                )}
+              </button>
+
+              <button 
                 onClick={onClose} 
                 className="p-2 sm:px-3 sm:py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl transition-all flex items-center gap-1.5 text-xs font-bold active:scale-95 cursor-pointer"
                 title="Cerrar módulo de administración"
@@ -1450,6 +1478,14 @@ export const CatalogManager: React.FC<CatalogManagerProps> = ({ products, onClos
                         {duplicateGroups.length}
                       </span>
                     )}
+                  </button>
+                  <button 
+                    onClick={() => setActiveTab('quickNotes')}
+                    className="bg-amber-50 hover:bg-amber-100/90 text-amber-900 border border-amber-200/80 px-3 sm:px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all shadow-2xs cursor-pointer shrink-0"
+                    title="Crear notas rápidas y apuntes para el catálogo"
+                  >
+                    <StickyNote size={14} className="text-amber-600" />
+                    <span className="hidden sm:inline">Notas</span>
                   </button>
                   <button 
                     onClick={() => setEditingProduct({ sku: getNextSequentialSKU(), category: 'libros', featured: false, minStock: 5, stock: 0, price: 0, costPrice: 0 })}
@@ -1892,6 +1928,10 @@ export const CatalogManager: React.FC<CatalogManagerProps> = ({ products, onClos
                 )}
               </AnimatePresence>
             </div>
+          ) : activeTab === 'quickNotes' ? (
+            <QuickNotesManager />
+          ) : activeTab === 'digitales' ? (
+            <DigitalManager products={digitalProducts} loading={digitalLoading} />
           ) : activeTab === 'quoter' ? (
             <ProductQuoter products={products} />
           ) : activeTab === 'suppliers' ? (

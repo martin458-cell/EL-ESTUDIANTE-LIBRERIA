@@ -43,6 +43,9 @@ import { useProducts, Product } from './hooks/useProducts';
 import { normalizeProductImageUrl, handleImageError } from './utils/imageUtils';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { CatalogManager } from './components/CatalogManager';
+import { DigitalCatalog } from './components/DigitalCatalog';
+import { EscaparateDigital } from './components/EscaparateDigital';
+import { useDigitalProducts } from './hooks/useDigitalProducts';
 
 export interface SmartSearchConfig {
   correctedQuery: string;
@@ -281,7 +284,7 @@ const Navbar = ({ user, isAdmin, onLogin, onLogout, onOpenAdmin, isLoading, acti
   onOpenAdmin: () => void,
   isLoading: boolean,
   activeView: string,
-  onNavigate: (view: 'home' | 'offers', sectionId?: string) => void
+  onNavigate: (view: 'home' | 'offers' | 'digitales', sectionId?: string) => void
 }) => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
@@ -304,6 +307,7 @@ const Navbar = ({ user, isAdmin, onLogin, onLogout, onOpenAdmin, isLoading, acti
   const navLinks = [
     { label: 'Inicio', view: 'home' as const },
     { label: 'Catálogo', href: '#catalogo', sectionId: 'catalogo' },
+    { label: 'Digitales El Estudiante', view: 'digitales' as const, isDigital: true },
     { label: 'Ofertas', view: 'offers' as const, isOffer: true },
     { label: 'Beneficios', href: '#beneficios', sectionId: 'beneficios' },
     { label: 'Ubicación', href: '#ubicacion', sectionId: 'ubicacion' },
@@ -338,6 +342,11 @@ const Navbar = ({ user, isAdmin, onLogin, onLogout, onOpenAdmin, isLoading, acti
                   {link.label}
                   {link.isOffer && (
                     <span className="text-[9px] bg-brand-orange text-white px-1.5 py-0.5 rounded-full animate-bounce">TOP</span>
+                  )}
+                  {(link as any).isDigital && (
+                    <span className="text-[9px] bg-gradient-to-r from-teal-500 to-emerald-500 text-white font-black px-1.5 py-0.5 rounded-full shadow-xs flex items-center gap-0.5">
+                      <Sparkles size={8} /> NUEVO
+                    </span>
                   )}
                 </button>
               ) : (
@@ -439,6 +448,9 @@ const Navbar = ({ user, isAdmin, onLogin, onLogout, onOpenAdmin, isLoading, acti
                       {link.isOffer && (
                         <span className="text-[10px] bg-brand-orange text-white px-2 py-0.5 rounded-full font-bold">TOP</span>
                       )}
+                      {(link as any).isDigital && (
+                        <span className="text-[10px] bg-emerald-600 text-white px-2 py-0.5 rounded-full font-bold">100% ORIGINAL</span>
+                      )}
                     </button>
                   ) : (
                     <a 
@@ -466,111 +478,6 @@ const Navbar = ({ user, isAdmin, onLogin, onLogout, onOpenAdmin, isLoading, acti
   );
 };
 
-const LatestNewsCarousel = ({ products }: { products: Product[] }) => {
-  const [index, setIndex] = useState(0);
-  const latestProducts = [...products]
-    .sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0))
-    .slice(0, 10);
-
-  useEffect(() => {
-    if (latestProducts.length <= 1) return;
-    const interval = setInterval(() => {
-      setIndex((prev) => (prev + 1) % latestProducts.length);
-    }, 5000);
-    return () => clearInterval(interval);
-  }, [latestProducts.length]);
-
-  if (latestProducts.length === 0) {
-    return (
-      <div className="bg-slate-100 rounded-[2.5rem] w-full aspect-[4/3] flex items-center justify-center text-slate-400">
-        <Package size={48} className="animate-pulse" />
-      </div>
-    );
-  }
-
-  const current = latestProducts[index];
-
-  return (
-    <div className="relative group perspective-1000">
-      <AnimatePresence mode="wait">
-        <motion.div
-          key={current.id}
-          initial={{ opacity: 0, x: 20, rotateY: -10 }}
-          animate={{ opacity: 1, x: 0, rotateY: 0 }}
-          exit={{ opacity: 0, x: -20, rotateY: 10 }}
-          transition={{ duration: 0.6, ease: "easeOut" }}
-          className="bg-white p-4 rounded-[2.5rem] shadow-2xl overflow-hidden border border-slate-100"
-        >
-          <div className="relative aspect-[4/3] overflow-hidden rounded-[2rem] bg-slate-50">
-            <img 
-              src={normalizeProductImageUrl(current.imageUrl, current.category, current.id)} 
-              alt={current.name} 
-              className="w-full h-full object-contain p-6"
-              referrerPolicy="no-referrer"
-              onError={(e) => handleImageError(e, current.category, current.id)}
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-slate-900/80 via-transparent to-transparent"></div>
-            
-            <div className="absolute top-4 right-4 bg-brand-orange text-white text-[10px] font-black uppercase tracking-widest px-4 py-1.5 rounded-full shadow-lg flex items-center gap-2 animate-pulse font-sans">
-              <Star size={12} fill="currentColor" className="text-yellow-350" /> ¡Recién Llegado!
-            </div>
-
-            <div className="absolute bottom-6 left-6 right-6 text-left">
-              <span className="inline-block px-2 py-0.5 rounded-lg bg-white/20 backdrop-blur-md text-white text-[10px] font-bold uppercase tracking-wider mb-2 border border-white/20">
-                {current.category}
-              </span>
-              <h3 className="text-xl md:text-2xl font-bold text-white leading-tight drop-shadow-md truncate">
-                {current.name}
-              </h3>
-              <p className="text-white/80 text-sm mt-1 font-medium truncate">{current.authorOrBrand}</p>
-            </div>
-          </div>
-          
-          <div className="mt-8 flex gap-4 items-center px-2">
-            <div className="p-4 bg-teal-50 rounded-2xl flex-1 flex flex-col items-center justify-center border border-brand-teal/10">
-              <ShoppingBag className="text-brand-teal mb-1" size={24} />
-              <span className="text-[10px] font-bold text-brand-teal uppercase tracking-widest">En Tienda</span>
-            </div>
-            <div className="flex-[1.5] text-right">
-              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Precio Puquio</p>
-              <p className="text-2xl font-display font-bold text-slate-900">
-                {current.price.toLocaleString('es-PE', { style: 'currency', currency: 'PEN' })}
-              </p>
-            </div>
-          </div>
-        </motion.div>
-      </AnimatePresence>
-
-      <div className="absolute -bottom-10 left-1/2 -translate-x-1/2 flex gap-2">
-        {latestProducts.map((_, i) => (
-          <button
-            key={i}
-            onClick={() => setIndex(i)}
-            className={`w-2 h-2 rounded-full transition-all ${index === i ? 'bg-brand-teal w-6' : 'bg-slate-300'}`}
-          />
-        ))}
-      </div>
-      
-      <div className="absolute top-1/2 -left-4 -translate-y-1/2 hidden lg:flex flex-col gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-        <button 
-          onClick={() => setIndex((prev) => (prev - 1 + latestProducts.length) % latestProducts.length)}
-          className="p-3 bg-white shadow-xl rounded-full text-slate-400 hover:text-brand-teal transition-colors border border-slate-50"
-        >
-          <ChevronLeft size={20} />
-        </button>
-      </div>
-      <div className="absolute top-1/2 -right-4 -translate-y-1/2 hidden lg:flex flex-col gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-        <button 
-          onClick={() => setIndex((prev) => (prev + 1) % latestProducts.length)}
-          className="p-3 bg-white shadow-xl rounded-full text-slate-400 hover:text-brand-teal transition-colors border border-slate-50"
-        >
-          <ChevronRight size={20} />
-        </button>
-      </div>
-    </div>
-  );
-};
-
 const Hero = ({ 
   onSearch, 
   products,
@@ -578,7 +485,8 @@ const Hero = ({
   isSmartLoading,
   smartFilter,
   onTriggerSmartSearch,
-  onClearSmartSearch
+  onClearSmartSearch,
+  onSelectProduct
 }: { 
   onSearch: (term: string) => void, 
   products: Product[],
@@ -586,7 +494,8 @@ const Hero = ({
   isSmartLoading: boolean,
   smartFilter: SmartSearchConfig | null,
   onTriggerSmartSearch: (query: string) => void,
-  onClearSmartSearch: () => void
+  onClearSmartSearch: () => void,
+  onSelectProduct: (product: Product) => void
 }) => {
   const [searchValue, setSearchValue] = useState(searchTerm);
 
@@ -747,20 +656,7 @@ const Hero = ({
           transition={{ duration: 1, ease: "easeOut" }}
           className="relative block"
         >
-          <div className="relative">
-            <LatestNewsCarousel products={products} />
-            
-            <div className="absolute -top-4 -left-4 sm:-top-6 sm:-left-6 bg-white p-3 sm:p-5 rounded-2xl sm:rounded-3xl shadow-xl border border-slate-50 flex items-center gap-3 sm:gap-4 scale-90 sm:scale-100 origin-top-left">
-              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-orange-100 text-brand-orange rounded-xl sm:rounded-2xl flex items-center justify-center shrink-0">
-                <Calendar size={20} className="sm:hidden" />
-                <Calendar size={24} className="hidden sm:block" />
-              </div>
-              <div className="pr-2 sm:pr-4">
-                <p className="text-[8px] sm:text-[10px] font-black text-slate-400 uppercase tracking-widest">Lo Nuevo</p>
-                <p className="font-bold text-slate-900 text-xs sm:text-sm whitespace-nowrap">Escaparate Digital</p>
-              </div>
-            </div>
-          </div>
+          <EscaparateDigital products={products} onSelectProduct={onSelectProduct} />
         </motion.div>
       </div>
     </section>
@@ -1554,7 +1450,7 @@ const InspirationalMarquee = () => {
 };
 
 const Footer = ({ onNavigate, activeView }: { 
-  onNavigate: (view: 'home' | 'offers', sectionId?: string) => void,
+  onNavigate: (view: 'home' | 'offers' | 'digitales', sectionId?: string) => void,
   activeView: string
 }) => {
   const handleSectionClick = (e: React.MouseEvent, sectionId: string) => {
@@ -1603,6 +1499,15 @@ const Footer = ({ onNavigate, activeView }: {
               >
                 Catálogo
               </a>
+            </li>
+            <li>
+              <button 
+                onClick={() => onNavigate('digitales')} 
+                className="hover:text-teal-300 transition-colors flex items-center gap-1.5"
+              >
+                <span>Digitales El Estudiante</span>
+                <span className="text-[9px] bg-teal-500/30 text-teal-300 border border-teal-500/40 px-1 rounded">100% Original</span>
+              </button>
             </li>
             <li>
               <button 
@@ -1678,14 +1583,16 @@ const Footer = ({ onNavigate, activeView }: {
 
 export default function App() {
   const { products, loading } = useProducts();
+  const { digitalProducts, loading: digitalLoading } = useDigitalProducts();
   const [user, setUser] = useState<FirebaseUser | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [showManager, setShowManager] = useState(false);
   const [isAuthLoading, setIsAuthLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [activeView, setActiveView] = useState<'home' | 'offers'>('home');
+  const [activeView, setActiveView] = useState<'home' | 'offers' | 'digitales'>('home');
   const [smartFilter, setSmartFilter] = useState<SmartSearchConfig | null>(null);
   const [isSmartLoading, setIsSmartLoading] = useState(false);
+  const [heroSelectedProduct, setHeroSelectedProduct] = useState<Product | null>(null);
 
   const handleTriggerSmartSearch = async (queryText: string) => {
     if (!queryText || !queryText.trim()) return;
@@ -1762,7 +1669,7 @@ export default function App() {
     }
   };
 
-  const handleNavigate = (view: 'home' | 'offers', sectionId?: string) => {
+  const handleNavigate = (view: 'home' | 'offers' | 'digitales', sectionId?: string) => {
     setActiveView(view);
     if (sectionId) {
       setTimeout(() => {
@@ -1809,6 +1716,7 @@ export default function App() {
               smartFilter={smartFilter}
               onTriggerSmartSearch={handleTriggerSmartSearch}
               onClearSmartSearch={handleClearSmartSearch}
+              onSelectProduct={setHeroSelectedProduct}
             />
             <ProductCatalog 
               products={products} 
@@ -1824,6 +1732,16 @@ export default function App() {
             <SocialShare />
             <BrandStrip />
           </motion.main>
+        ) : activeView === 'digitales' ? (
+          <motion.div
+            key="digitales"
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -20 }}
+            transition={{ duration: 0.3 }}
+          >
+            <DigitalCatalog products={digitalProducts} loading={digitalLoading} />
+          </motion.div>
         ) : (
           <motion.div
             key="offers"
@@ -1839,6 +1757,15 @@ export default function App() {
 
       <Footer onNavigate={handleNavigate} activeView={activeView} />
       <AIChatPlaceholder />
+
+      <AnimatePresence>
+        {heroSelectedProduct && (
+          <ProductDetailModal
+            product={heroSelectedProduct}
+            onClose={() => setHeroSelectedProduct(null)}
+          />
+        )}
+      </AnimatePresence>
 
       <AnimatePresence>
         {showManager && isAdmin && (

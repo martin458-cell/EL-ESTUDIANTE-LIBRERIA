@@ -151,9 +151,70 @@
         "updatedAt": { "type": "string", "format": "date-time" }
       },
       "required": ["name", "monthlyAmount", "payments"]
+    },
+    "DigitalProduct": {
+      "title": "DigitalProduct",
+      "description": "Producto digital original exclusivo de Librería El Estudiante (Libros, Revistas, Cuadernos de Trabajo, Para Colorear).",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string", "description": "Título del producto digital" },
+        "description": { "type": "string", "description": "Descripción pedagógica y contenido" },
+        "category": { 
+          "type": "string", 
+          "enum": ["libros", "revistas", "cuadernos_trabajo", "para_colorear"], 
+          "description": "Tipo de material digital" 
+        },
+        "price": { "type": "number", "description": "Precio de adquisición en Soles (PEN)" },
+        "offerPrice": { "type": "number", "description": "Precio promocional opcional" },
+        "pages": { "type": "integer", "description": "Número de páginas del documento" },
+        "format": { "type": "string", "description": "Formato de archivo (ej. PDF Alta Resolución A4)" },
+        "fileSize": { "type": "string", "description": "Tamaño estimado del archivo (ej. 15 MB)" },
+        "targetAudience": { "type": "string", "description": "Nivel escolar o edad recomendada (ej. Inicial, Primaria, Secundaria, Docentes)" },
+        "coverUrl": { "type": "string", "description": "URL de la portada en alta definición" },
+        "previewPages": { 
+          "type": "array", 
+          "items": { "type": "string" },
+          "description": "URLs de imágenes de páginas de muestra para previsualización" 
+        },
+        "downloadUrl": { "type": "string", "description": "Enlace seguro de descarga tras compra (Drive/PDF/Nube)" },
+        "isOriginal": { "type": "boolean", "description": "Garantía de contenido 100% original de Librería El Estudiante" },
+        "featured": { "type": "boolean", "description": "Destacado en la biblioteca digital" },
+        "tags": { 
+          "type": "array", 
+          "items": { "type": "string" },
+          "description": "Etiquetas de búsqueda pedagógica" 
+        },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["title", "category", "price", "coverUrl"]
+    },
+    "QuickNote": {
+      "title": "QuickNote",
+      "description": "Notas rápidas, apuntes y recordatorios creados por el administrador.",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string", "description": "Título o asunto de la nota rápida" },
+        "content": { "type": "string", "description": "Contenido del apunte o recordatorio" },
+        "color": { "type": "string", "description": "Color temático de la nota (yellow, blue, green, purple, rose, amber)" },
+        "category": { "type": "string", "description": "Categoría (general, stock, pedido, cliente, urgente)" },
+        "pinned": { "type": "boolean", "description": "Si la nota está fijada en la parte superior" },
+        "completed": { "type": "boolean", "description": "Si la nota fue marcada como realizada" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["content"]
     }
   },
   "firestore": {
+    "/quick_notes/{noteId}": {
+      "schema": "QuickNote",
+      "description": "Notas y recordatorios rápidos del administrador."
+    },
+    "/digital_products/{digitalProductId}": {
+      "schema": "DigitalProduct",
+      "description": "Catálogo de Digitales El Estudiante (libros, revistas, cuadernos de trabajo y para colorear originales)."
+    },
     "/products/{productId}": {
       "schema": "Product",
       "description": "Colección global de productos."
